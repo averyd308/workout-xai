@@ -1,0 +1,5 @@
+.env
+workouts.db
+__pycache__/
+*.pyc
+.vercel/
