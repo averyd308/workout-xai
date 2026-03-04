@@ -1,223 +1,133 @@
 import os
-from contextlib import contextmanager
 from datetime import date, timedelta
 
-import psycopg2
+from supabase import create_client
 
 
-@contextmanager
-def get_conn():
-    conn = psycopg2.connect(os.environ["DATABASE_URL"])
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+def get_client():
+    return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
 
 def init_db():
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS daily_posts (
-                id SERIAL PRIMARY KEY,
-                date TEXT UNIQUE,
-                message_ts TEXT,
-                channel_id TEXT,
-                stretch_option TEXT,
-                workout_option TEXT
-            )
-        """)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS activity_logs (
-                id SERIAL PRIMARY KEY,
-                user_id TEXT,
-                date TEXT,
-                activity_type TEXT,
-                description TEXT,
-                logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS scheduled_options (
-                date TEXT PRIMARY KEY,
-                stretch_title TEXT,
-                stretch_description TEXT,
-                workout_title TEXT,
-                workout_description TEXT
-            )
-        """)
+    # Tables are created in Supabase SQL editor — this is a no-op
+    pass
 
 
 def save_daily_post(date_str, message_ts, channel_id, stretch_option, workout_option):
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            INSERT INTO daily_posts (date, message_ts, channel_id, stretch_option, workout_option)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (date) DO UPDATE SET
-                message_ts = EXCLUDED.message_ts,
-                channel_id = EXCLUDED.channel_id,
-                stretch_option = EXCLUDED.stretch_option,
-                workout_option = EXCLUDED.workout_option
-            """,
-            (date_str, message_ts, channel_id, stretch_option, workout_option),
-        )
-
-
-def set_scheduled_option(date_str, option_type, title, description):
-    with get_conn() as conn:
-        c = conn.cursor()
-        if option_type == "stretch":
-            c.execute(
-                """
-                INSERT INTO scheduled_options (date, stretch_title, stretch_description)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (date) DO UPDATE SET
-                    stretch_title = EXCLUDED.stretch_title,
-                    stretch_description = EXCLUDED.stretch_description
-                """,
-                (date_str, title, description),
-            )
-        else:
-            c.execute(
-                """
-                INSERT INTO scheduled_options (date, workout_title, workout_description)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (date) DO UPDATE SET
-                    workout_title = EXCLUDED.workout_title,
-                    workout_description = EXCLUDED.workout_description
-                """,
-                (date_str, title, description),
-            )
-
-
-def get_scheduled_options(date_str):
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            "SELECT stretch_title, stretch_description, workout_title, workout_description FROM scheduled_options WHERE date = %s",
-            (date_str,),
-        )
-        return c.fetchone()
+    get_client().table("daily_posts").upsert({
+        "date": date_str,
+        "message_ts": message_ts,
+        "channel_id": channel_id,
+        "stretch_option": stretch_option,
+        "workout_option": workout_option,
+    }).execute()
 
 
 def get_today_post():
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT * FROM daily_posts WHERE date = %s", (str(date.today()),))
-        return c.fetchone()
+    result = get_client().table("daily_posts").select("*").eq("date", str(date.today())).execute()
+    return result.data[0] if result.data else None
 
 
 def get_post_by_ts(message_ts):
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT * FROM daily_posts WHERE message_ts = %s", (message_ts,))
-        return c.fetchone()
+    result = get_client().table("daily_posts").select("*").eq("message_ts", message_ts).execute()
+    return result.data[0] if result.data else None
 
 
 def log_activity(user_id, activity_type, description):
     today = str(date.today())
-    with get_conn() as conn:
-        c = conn.cursor()
-        if activity_type != "custom":
-            c.execute(
-                "SELECT id FROM activity_logs WHERE user_id = %s AND date = %s AND activity_type = %s",
-                (user_id, today, activity_type),
-            )
-            if c.fetchone():
-                return False
-        c.execute(
-            "INSERT INTO activity_logs (user_id, date, activity_type, description) VALUES (%s, %s, %s, %s)",
-            (user_id, today, activity_type, description),
-        )
-        return True
+    client = get_client()
+    if activity_type != "custom":
+        existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).execute()
+        if existing.data:
+            return False
+    client.table("activity_logs").insert({
+        "user_id": user_id,
+        "date": today,
+        "activity_type": activity_type,
+        "description": description,
+    }).execute()
+    return True
 
 
 def remove_activity(user_id, activity_type):
     today = str(date.today())
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            DELETE FROM activity_logs WHERE id = (
-                SELECT id FROM activity_logs
-                WHERE user_id = %s AND date = %s AND activity_type = %s
-                ORDER BY logged_at DESC LIMIT 1
-            )
-            """,
-            (user_id, today, activity_type),
-        )
+    client = get_client()
+    existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).order("logged_at", desc=True).limit(1).execute()
+    if existing.data:
+        client.table("activity_logs").delete().eq("id", existing.data[0]["id"]).execute()
 
 
 def get_user_stats(user_id):
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            "SELECT activity_type, COUNT(*) FROM activity_logs WHERE user_id = %s GROUP BY activity_type",
-            (user_id,),
-        )
-        return {row[0]: row[1] for row in c.fetchall()}
+    result = get_client().table("activity_logs").select("activity_type").eq("user_id", user_id).execute()
+    stats = {}
+    for row in result.data:
+        t = row["activity_type"]
+        stats[t] = stats.get(t, 0) + 1
+    return stats
 
 
 def get_weekly_stats():
     week_ago = str(date.today() - timedelta(days=7))
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            "SELECT user_id, COUNT(*) as total FROM activity_logs WHERE date >= %s GROUP BY user_id ORDER BY total DESC",
-            (week_ago,),
-        )
-        return c.fetchall()
+    result = get_client().table("activity_logs").select("user_id").gte("date", week_ago).execute()
+    counts = {}
+    for row in result.data:
+        uid = row["user_id"]
+        counts[uid] = counts.get(uid, 0) + 1
+    return sorted(counts.items(), key=lambda x: x[1], reverse=True)
 
 
 def get_weekly_leaderboard():
     today = date.today()
     monday = today - timedelta(days=today.weekday())
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            SELECT
-                user_id,
-                SUM(CASE WHEN activity_type IN ('stretch', 'workout') THEN 1 ELSE 0 END) AS reacts,
-                SUM(CASE WHEN activity_type = 'custom' THEN 1 ELSE 0 END) AS custom
-            FROM activity_logs
-            WHERE date >= %s
-            GROUP BY user_id
-            ORDER BY (reacts + custom) DESC
-            """,
-            (str(monday),),
-        )
-        return c.fetchall(), monday
+    result = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(monday)).execute()
+    stats = {}
+    for row in result.data:
+        uid = row["user_id"]
+        if uid not in stats:
+            stats[uid] = {"reacts": 0, "custom": 0}
+        if row["activity_type"] in ("stretch", "workout"):
+            stats[uid]["reacts"] += 1
+        elif row["activity_type"] == "custom":
+            stats[uid]["custom"] += 1
+    rows = sorted([(uid, s["reacts"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2], reverse=True)
+    return rows, monday
 
 
 def get_weekly_custom_descriptions(user_id, since_date):
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            "SELECT description FROM activity_logs WHERE user_id = %s AND activity_type = 'custom' AND date >= %s ORDER BY logged_at",
-            (user_id, str(since_date)),
-        )
-        return [row[0] for row in c.fetchall()]
+    result = get_client().table("activity_logs").select("description").eq("user_id", user_id).eq("activity_type", "custom").gte("date", str(since_date)).order("logged_at").execute()
+    return [r["description"] for r in result.data]
 
 
 def get_alltime_leaderboard():
-    with get_conn() as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            SELECT
-                user_id,
-                SUM(CASE WHEN activity_type IN ('stretch', 'workout') THEN 1 ELSE 0 END) AS reacts,
-                SUM(CASE WHEN activity_type = 'custom' THEN 1 ELSE 0 END) AS custom
-            FROM activity_logs
-            GROUP BY user_id
-            ORDER BY (reacts + custom) DESC
-            """
-        )
-        return c.fetchall()
+    result = get_client().table("activity_logs").select("user_id,activity_type").execute()
+    stats = {}
+    for row in result.data:
+        uid = row["user_id"]
+        if uid not in stats:
+            stats[uid] = {"reacts": 0, "custom": 0}
+        if row["activity_type"] in ("stretch", "workout"):
+            stats[uid]["reacts"] += 1
+        elif row["activity_type"] == "custom":
+            stats[uid]["custom"] += 1
+    return sorted([(uid, s["reacts"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2], reverse=True)
+
+
+def set_scheduled_option(date_str, option_type, title, description):
+    client = get_client()
+    if option_type == "stretch":
+        update_data = {"stretch_title": title, "stretch_description": description}
+    else:
+        update_data = {"workout_title": title, "workout_description": description}
+    existing = client.table("scheduled_options").select("date").eq("date", date_str).execute()
+    if existing.data:
+        client.table("scheduled_options").update(update_data).eq("date", date_str).execute()
+    else:
+        client.table("scheduled_options").insert({"date": date_str, **update_data}).execute()
+
+
+def get_scheduled_options(date_str):
+    result = get_client().table("scheduled_options").select("stretch_title,stretch_description,workout_title,workout_description").eq("date", date_str).execute()
+    if result.data:
+        r = result.data[0]
+        return (r["stretch_title"], r["stretch_description"], r["workout_title"], r["workout_description"])
+    return None

@@ -33,7 +33,8 @@ def handle_reaction_added(event):
     if not post:
         return
 
-    _, _, _, _, stretch_title, workout_title = post
+    stretch_title = post["stretch_option"]
+    workout_title = post["workout_option"]
     user_id = event["user"]
     emoji = event["reaction"]
 
