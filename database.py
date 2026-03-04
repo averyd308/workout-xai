@@ -130,8 +130,10 @@ def set_scheduled_option(date_str, option_type, title, description):
     client = get_client()
     if option_type == "stretch":
         update_data = {"stretch_title": title, "stretch_description": description}
-    else:
+    elif option_type == "workout":
         update_data = {"workout_title": title, "workout_description": description}
+    else:
+        update_data = {"custom_title": title, "custom_description": description}
     existing = client.table("scheduled_options").select("date").eq("date", date_str).execute()
     if existing.data:
         client.table("scheduled_options").update(update_data).eq("date", date_str).execute()
@@ -140,8 +142,8 @@ def set_scheduled_option(date_str, option_type, title, description):
 
 
 def get_scheduled_options(date_str):
-    result = get_client().table("scheduled_options").select("stretch_title,stretch_description,workout_title,workout_description").eq("date", date_str).execute()
+    result = get_client().table("scheduled_options").select("stretch_title,stretch_description,workout_title,workout_description,custom_title,custom_description").eq("date", date_str).execute()
     if result.data:
         r = result.data[0]
-        return (r["stretch_title"], r["stretch_description"], r["workout_title"], r["workout_description"])
+        return (r.get("stretch_title"), r.get("stretch_description"), r.get("workout_title"), r.get("workout_description"), r.get("custom_title"), r.get("custom_description"))
     return None

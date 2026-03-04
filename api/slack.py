@@ -246,6 +246,21 @@ def handle_set_exercise(ack, command, respond):
     respond(f":white_check_mark: Workout set for *{target_date}*: *{title}*")
 
 
+@bolt_app.command("/setcustom")
+def handle_set_custom(ack, command, respond):
+    ack()
+    try:
+        text = command["text"].strip()
+        if not text:
+            respond("Usage: `/setcustom Title | Description`\nAdd `tomorrow` at the start to set the next day.")
+            return
+        target_date, title, description = _parse_schedule_input(text)
+        database.set_scheduled_option(target_date, "custom", title, description)
+        respond(f":white_check_mark: Custom suggestion set for *{target_date}*: *{title}*")
+    except Exception as e:
+        respond(f"Error: {e}")
+
+
 @bolt_app.command("/setheader")
 def handle_set_header(ack, command, respond):
     ack()

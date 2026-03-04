@@ -28,8 +28,10 @@ def post_daily_message(force=False):
     if scheduled and scheduled[0] and scheduled[2]:
         stretch = {"title": scheduled[0], "description": scheduled[1] or ""}
         workout = {"title": scheduled[2], "description": scheduled[3] or ""}
+        custom_suggestion = {"title": scheduled[4], "description": scheduled[5] or ""} if scheduled[4] else None
     else:
         stretch, workout = workouts.get_daily_options()
+        custom_suggestion = None
 
     header_text = database.get_setting("header", "Good morning! Today's movement options 🌅")
     blocks = [
@@ -65,6 +67,25 @@ def post_daily_message(force=False):
                 ),
             },
         },
+    ]
+
+    if custom_suggestion:
+        blocks += [
+            {"type": "divider"},
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f":running:  *{custom_suggestion['title']}*\n"
+                        f"_{custom_suggestion['description']}_\n"
+                        f"→ Log it with `/workout {custom_suggestion['title']}`"
+                    ),
+                },
+            },
+        ]
+
+    blocks += [
         {"type": "divider"},
         {
             "type": "context",
