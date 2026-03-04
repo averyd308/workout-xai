@@ -112,6 +112,20 @@ def get_alltime_leaderboard():
     return sorted([(uid, s["reacts"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2], reverse=True)
 
 
+def get_setting(key, default=None):
+    result = get_client().table("settings").select("value").eq("key", key).execute()
+    return result.data[0]["value"] if result.data else default
+
+
+def set_setting(key, value):
+    client = get_client()
+    existing = client.table("settings").select("key").eq("key", key).execute()
+    if existing.data:
+        client.table("settings").update({"value": value}).eq("key", key).execute()
+    else:
+        client.table("settings").insert({"key": key, "value": value}).execute()
+
+
 def set_scheduled_option(date_str, option_type, title, description):
     client = get_client()
     if option_type == "stretch":

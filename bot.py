@@ -31,10 +31,11 @@ def post_daily_message(force=False):
     else:
         stretch, workout = workouts.get_daily_options()
 
+    header_text = database.get_setting("header", "Good morning! Today's movement options 🌅")
     blocks = [
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": "Good morning! Today's movement options 🌅"},
+            "text": {"type": "plain_text", "text": header_text},
         },
         {
             "type": "section",

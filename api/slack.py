@@ -246,6 +246,20 @@ def handle_set_exercise(ack, command, respond):
     respond(f":white_check_mark: Workout set for *{target_date}*: *{title}*")
 
 
+@bolt_app.command("/setheader")
+def handle_set_header(ack, command, respond):
+    ack()
+    try:
+        text = command["text"].strip()
+        if not text:
+            respond("Usage: `/setheader Your header text here`")
+            return
+        database.set_setting("header", text)
+        respond(f":white_check_mark: Header updated to: *{text}*")
+    except Exception as e:
+        respond(f"Error: {e}")
+
+
 @bolt_app.command("/postdaily")
 def handle_post_daily(ack, respond):
     ack()
