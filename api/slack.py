@@ -83,20 +83,24 @@ def handle_reaction_removed(event):
 @bolt_app.command("/workout")
 def handle_workout(ack, command, respond):
     ack()
-    description = command["text"].strip()
-    if not description:
-        respond("Please describe your workout. Example: `/workout 30 min run`")
-        return
+    try:
+        description = command["text"].strip()
+        if not description:
+            respond("Please describe your workout. Example: `/workout 30 min run`")
+            return
 
-    user_id = command["user_id"]
-    database.log_activity(user_id, "custom", description)
-    stats = database.get_user_stats(user_id)
-    total = sum(stats.values())
-    custom = stats.get("custom", 0)
-    respond(
-        f":white_check_mark: Logged: _{description}_\n"
-        f"Custom activities: *{custom}*  •  Total logged: *{total}*"
-    )
+        user_id = command["user_id"]
+        database.log_activity(user_id, "custom", description)
+        stats = database.get_user_stats(user_id)
+        total = sum(stats.values())
+        custom = stats.get("custom", 0)
+        respond(
+            f":white_check_mark: Logged: _{description}_\n"
+            f"Custom activities: *{custom}*  •  Total logged: *{total}*"
+        )
+    except Exception as e:
+        logging.error(f"/workout error: {e}")
+        respond(f"Error: {e}")
 
 
 @bolt_app.command("/mystats")
@@ -242,7 +246,11 @@ def handle_post_daily(ack, respond):
 @flask_app.route("/api/slack", methods=["POST"])
 @flask_app.route("/", methods=["POST"])
 def slack_events():
-    return slack_handler.handle(request)
+    try:
+        return slack_handler.handle(request)
+    except Exception as e:
+        logging.error(f"Unhandled error: {e}", exc_info=True)
+        return str(e), 500
 
 
 app = flask_app
