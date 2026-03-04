@@ -1,7 +1,7 @@
 import sys
 import os
 import logging
-from datetime import date
+from datetime import date, timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -9,7 +9,7 @@ from flask import Flask, request
 from slack_bolt.adapter.flask import SlackRequestHandler
 
 import database
-from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI
+from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, post_daily_message
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -189,6 +189,52 @@ def handle_alltime_leaderboard(ack, respond):
         respond({"text": "No activity logged yet. Be the first!", "response_type": "in_channel"})
         return
     respond(_build_leaderboard_text("All-Time Leaderboard", rows))
+
+
+# ── Schedule Commands ──────────────────────────────────────────────────────────
+
+def _parse_schedule_input(text):
+    """Returns (target_date, title, description) from command text."""
+    target_date = str(date.today())
+    if text.lower().startswith("tomorrow "):
+        text = text[9:].strip()
+        target_date = str(date.today() + timedelta(days=1))
+    if "|" in text:
+        title, description = [p.strip() for p in text.split("|", 1)]
+    else:
+        title, description = text.strip(), ""
+    return target_date, title, description
+
+
+@bolt_app.command("/setstretch")
+def handle_set_stretch(ack, command, respond):
+    ack()
+    text = command["text"].strip()
+    if not text:
+        respond("Usage: `/setstretch Title | Description`\nAdd `tomorrow` at the start to set the next day.")
+        return
+    target_date, title, description = _parse_schedule_input(text)
+    database.set_scheduled_option(target_date, "stretch", title, description)
+    respond(f":white_check_mark: Stretch set for *{target_date}*: *{title}*")
+
+
+@bolt_app.command("/setexercise")
+def handle_set_exercise(ack, command, respond):
+    ack()
+    text = command["text"].strip()
+    if not text:
+        respond("Usage: `/setexercise Title | Description`\nAdd `tomorrow` at the start to set the next day.")
+        return
+    target_date, title, description = _parse_schedule_input(text)
+    database.set_scheduled_option(target_date, "workout", title, description)
+    respond(f":white_check_mark: Workout set for *{target_date}*: *{title}*")
+
+
+@bolt_app.command("/postdaily")
+def handle_post_daily(ack, respond):
+    ack()
+    post_daily_message(force=True)
+    respond(":white_check_mark: Daily workout posted!")
 
 
 # ── Route ──────────────────────────────────────────────────────────────────────

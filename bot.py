@@ -22,8 +22,13 @@ def post_daily_message(force=False):
         logging.info("Daily post already sent today, skipping.")
         return
 
-    stretch, workout = workouts.get_daily_options()
     today = str(datetime.now().date())
+    scheduled = database.get_scheduled_options(today)
+    if scheduled and scheduled[0] and scheduled[2]:
+        stretch = {"title": scheduled[0], "description": scheduled[1] or ""}
+        workout = {"title": scheduled[2], "description": scheduled[3] or ""}
+    else:
+        stretch, workout = workouts.get_daily_options()
 
     blocks = [
         {

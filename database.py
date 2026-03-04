@@ -41,6 +41,15 @@ def init_db():
                 logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS scheduled_options (
+                date TEXT PRIMARY KEY,
+                stretch_title TEXT,
+                stretch_description TEXT,
+                workout_title TEXT,
+                workout_description TEXT
+            )
+        """)
 
 
 def save_daily_post(date_str, message_ts, channel_id, stretch_option, workout_option):
@@ -58,6 +67,43 @@ def save_daily_post(date_str, message_ts, channel_id, stretch_option, workout_op
             """,
             (date_str, message_ts, channel_id, stretch_option, workout_option),
         )
+
+
+def set_scheduled_option(date_str, option_type, title, description):
+    with get_conn() as conn:
+        c = conn.cursor()
+        if option_type == "stretch":
+            c.execute(
+                """
+                INSERT INTO scheduled_options (date, stretch_title, stretch_description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (date) DO UPDATE SET
+                    stretch_title = EXCLUDED.stretch_title,
+                    stretch_description = EXCLUDED.stretch_description
+                """,
+                (date_str, title, description),
+            )
+        else:
+            c.execute(
+                """
+                INSERT INTO scheduled_options (date, workout_title, workout_description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (date) DO UPDATE SET
+                    workout_title = EXCLUDED.workout_title,
+                    workout_description = EXCLUDED.workout_description
+                """,
+                (date_str, title, description),
+            )
+
+
+def get_scheduled_options(date_str):
+    with get_conn() as conn:
+        c = conn.cursor()
+        c.execute(
+            "SELECT stretch_title, stretch_description, workout_title, workout_description FROM scheduled_options WHERE date = %s",
+            (date_str,),
+        )
+        return c.fetchone()
 
 
 def get_today_post():
