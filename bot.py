@@ -10,6 +10,7 @@ import workouts
 bolt_app = App(
     token=os.environ["SLACK_BOT_TOKEN"],
     signing_secret=os.environ["SLACK_SIGNING_SECRET"],
+    process_before_response=True,
 )
 
 CHANNEL_ID = os.environ["SLACK_CHANNEL_ID"]
