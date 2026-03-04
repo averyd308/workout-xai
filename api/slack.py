@@ -80,6 +80,13 @@ def handle_reaction_removed(event):
 
 # ── Slash Commands ─────────────────────────────────────────────────────────────
 
+@bolt_app.command("/ping")
+def handle_ping(ack, respond):
+    logging.info("ping handler called")
+    ack()
+    respond("pong!")
+
+
 @bolt_app.command("/workout")
 def handle_workout(ack, command, respond):
     ack()
