@@ -113,7 +113,11 @@ def handle_workout(ack, command, respond):
 @bolt_app.command("/mystats")
 def handle_mystats(ack, command, respond):
     ack()
-    stats = database.get_user_stats(command["user_id"])
+    try:
+        stats = database.get_user_stats(command["user_id"])
+    except Exception as e:
+        respond(f"DB error: {e}")
+        return
     if not stats:
         respond("You haven't logged anything yet! React to today's post or use `/workout` to get started.")
         return
@@ -244,8 +248,12 @@ def handle_set_exercise(ack, command, respond):
 @bolt_app.command("/postdaily")
 def handle_post_daily(ack, respond):
     ack()
-    post_daily_message(force=True)
-    respond(":white_check_mark: Daily workout posted!")
+    try:
+        post_daily_message(force=True)
+        respond(":white_check_mark: Daily workout posted!")
+    except Exception as e:
+        logging.error(f"/postdaily error: {e}")
+        respond(f"Error: {e}")
 
 
 # ── Route ──────────────────────────────────────────────────────────────────────
