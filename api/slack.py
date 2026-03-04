@@ -14,7 +14,7 @@ from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 flask_app = Flask(__name__)
-handler = SlackRequestHandler(bolt_app)
+slack_handler = SlackRequestHandler(bolt_app)
 
 try:
     database.init_db()
@@ -196,7 +196,7 @@ def handle_alltime_leaderboard(ack, respond):
 @flask_app.route("/api/slack", methods=["POST"])
 @flask_app.route("/", methods=["POST"])
 def slack_events():
-    return handler.handle(request)
+    return slack_handler.handle(request)
 
 
 app = flask_app
