@@ -64,14 +64,17 @@ def handle_reaction_added(event):
         scheduled = database.get_scheduled_options(post["date"])
         custom_title = scheduled[4] if scheduled and scheduled[4] else None
         if custom_title:
-            logged = database.log_activity(user_id, "custom", custom_title)
+            logged = database.log_activity(user_id, "custom", "")
             if logged:
+                from datetime import datetime as dt
+                d = dt.strptime(post["date"], "%Y-%m-%d")
+                date_display = f"{d.strftime('%b')} {d.day}"
                 stats = database.get_user_stats(user_id)
                 count = stats.get("custom", 0)
                 bolt_app.client.chat_postEphemeral(
                     channel=CHANNEL_ID,
                     user=user_id,
-                    text=f":runner: Nice work! You've logged *{count}* custom {'activity' if count == 1 else 'activities'} total.",
+                    text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} total.",
                 )
 
 
@@ -130,6 +133,7 @@ def handle_workout(ack, command):
 def handle_mystats(ack, command):
     try:
         stats = database.get_user_stats(command["user_id"])
+        custom_logs = database.get_custom_activity_logs(command["user_id"])
     except Exception as e:
         ack(f"DB error: {e}")
         return
@@ -141,14 +145,22 @@ def handle_mystats(ack, command):
     workout = stats.get("workout", 0)
     custom = stats.get("custom", 0)
     total = sum(stats.values())
-    ack(
-        f"*Your activity stats (all time):*\n"
-        f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
-        f":muscle:  Workouts: *{workout}*\n"
-        f":running:  Custom activities: *{custom}*\n"
-        f"─────────────────────\n"
-        f"Total: *{total}* activities"
-    )
+
+    lines = [
+        f"*Your activity stats (all time):*",
+        f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
+        f":muscle:  Workouts: *{workout}*",
+        f":runner:  Custom activities: *{custom}*",
+    ]
+    if custom_logs:
+        from datetime import datetime
+        for description, date_str in custom_logs:
+            d = datetime.strptime(date_str, "%Y-%m-%d")
+            friendly = f"{d.strftime('%b')} {d.day}"
+            label = description if description else "Custom workout"
+            lines.append(f"     • {label} _({friendly})_")
+    lines += ["─────────────────────", f"Total: *{total}* activities"]
+    ack("\n".join(lines))
 
 
 @bolt_app.command("/teamstats")
