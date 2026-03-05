@@ -105,12 +105,11 @@ def handle_ping(ack, respond):
 
 
 @bolt_app.command("/workout")
-def handle_workout(ack, command, respond):
-    ack()
+def handle_workout(ack, command):
     try:
         description = command["text"].strip()
         if not description:
-            respond("Please describe your workout. Example: `/workout 30 min run`")
+            ack("Please describe your workout. Example: `/workout 30 min run`")
             return
 
         user_id = command["user_id"]
@@ -118,32 +117,31 @@ def handle_workout(ack, command, respond):
         stats = database.get_user_stats(user_id)
         total = sum(stats.values())
         custom = stats.get("custom", 0)
-        respond(
+        ack(
             f":white_check_mark: Logged: _{description}_\n"
             f"Custom activities: *{custom}*  •  Total logged: *{total}*"
         )
     except Exception as e:
         logging.error(f"/workout error: {e}")
-        respond(f"Error: {e}")
+        ack(f"Error: {e}")
 
 
 @bolt_app.command("/mystats")
-def handle_mystats(ack, command, respond):
-    ack()
+def handle_mystats(ack, command):
     try:
         stats = database.get_user_stats(command["user_id"])
     except Exception as e:
-        respond(f"DB error: {e}")
+        ack(f"DB error: {e}")
         return
     if not stats:
-        respond("You haven't logged anything yet! React to today's post or use `/workout` to get started.")
+        ack("You haven't logged anything yet! React to today's post or use `/workout` to get started.")
         return
 
     stretch = stats.get("stretch", 0)
     workout = stats.get("workout", 0)
     custom = stats.get("custom", 0)
     total = sum(stats.values())
-    respond(
+    ack(
         f"*Your activity stats (all time):*\n"
         f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
         f":muscle:  Workouts: *{workout}*\n"
@@ -154,11 +152,10 @@ def handle_mystats(ack, command, respond):
 
 
 @bolt_app.command("/teamstats")
-def handle_teamstats(ack, command, respond):
-    ack()
+def handle_teamstats(ack, command):
     weekly = database.get_weekly_stats()
     if not weekly:
-        respond("No activity logged in the past 7 days yet. Be the first!")
+        ack("No activity logged in the past 7 days yet. Be the first!")
         return
 
     medals = ["🥇", "🥈", "🥉"]
@@ -166,7 +163,7 @@ def handle_teamstats(ack, command, respond):
     for i, (user_id, count) in enumerate(weekly):
         medal = medals[i] if i < 3 else "▪️"
         lines.append(f"{medal} <@{user_id}>: *{count}* {'activity' if count == 1 else 'activities'}")
-    respond("\n".join(lines))
+    ack("\n".join(lines))
 
 
 def _build_leaderboard_text(title, rows):
