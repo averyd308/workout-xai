@@ -95,18 +95,21 @@ def get_weekly_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"reacts": 0, "custom": 0}
-        if row["activity_type"] in ("stretch", "workout"):
-            stats[uid]["reacts"] += 1
+            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0}
+        if row["activity_type"] == "stretch":
+            stats[uid]["stretch"] += 1
+        elif row["activity_type"] == "workout":
+            stats[uid]["workout"] += 1
         elif row["activity_type"] == "custom":
             stats[uid]["custom"] += 1
-    rows = sorted([(uid, s["reacts"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2], reverse=True)
+    rows = sorted([(uid, s["stretch"], s["workout"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3], reverse=True)
     return rows, monday
 
 
-def get_weekly_custom_descriptions(user_id, since_date):
-    result = get_client().table("activity_logs").select("description").eq("user_id", user_id).eq("activity_type", "custom").gte("date", str(since_date)).order("logged_at").execute()
-    return [r["description"] for r in result.data]
+def get_weekly_custom_logs(user_id, since_date):
+    """Return list of (description, date_str) for custom activities since since_date."""
+    result = get_client().table("activity_logs").select("description,date").eq("user_id", user_id).eq("activity_type", "custom").gte("date", str(since_date)).order("date").execute()
+    return [(r["description"], r["date"]) for r in result.data]
 
 
 def get_alltime_leaderboard():
@@ -115,12 +118,14 @@ def get_alltime_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"reacts": 0, "custom": 0}
-        if row["activity_type"] in ("stretch", "workout"):
-            stats[uid]["reacts"] += 1
+            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0}
+        if row["activity_type"] == "stretch":
+            stats[uid]["stretch"] += 1
+        elif row["activity_type"] == "workout":
+            stats[uid]["workout"] += 1
         elif row["activity_type"] == "custom":
             stats[uid]["custom"] += 1
-    return sorted([(uid, s["reacts"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2], reverse=True)
+    return sorted([(uid, s["stretch"], s["workout"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3], reverse=True)
 
 
 def get_setting(key, default=None):

@@ -181,14 +181,16 @@ def handle_teamstats(ack, command):
 def _build_leaderboard_text(title, rows):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
-    for i, (user_id, reacts, custom) in enumerate(rows):
-        total = reacts + custom
+    for i, (user_id, stretches, workouts, custom) in enumerate(rows):
+        total = stretches + workouts + custom
         medal = medals[i] if i < 3 else f"{i + 1}."
         parts = []
-        if reacts:
-            parts.append(f":muscle: {reacts} react{'s' if reacts != 1 else ''}")
+        if stretches:
+            parts.append(f":person_in_lotus_position: {stretches}")
+        if workouts:
+            parts.append(f":muscle: {workouts}")
         if custom:
-            parts.append(f":running: {custom} custom")
+            parts.append(f":runner: {custom}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
@@ -202,23 +204,31 @@ def handle_weekly_leaderboard(ack, respond):
         respond({"text": "No activity logged this week yet. Be the first!", "response_type": "in_channel"})
         return
 
+    from datetime import datetime
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
     today = date.today()
     title = f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*"
     lines = [title, ""]
-    for i, (user_id, reacts, custom) in enumerate(rows[:5]):
-        total = reacts + custom
+    for i, (user_id, stretches, workouts, custom) in enumerate(rows[:5]):
+        total = stretches + workouts + custom
         medal = medals[i]
         parts = []
-        if reacts:
-            parts.append(f":muscle: {reacts} react{'s' if reacts != 1 else ''}")
+        if stretches:
+            parts.append(f":person_in_lotus_position: {stretches}")
+        if workouts:
+            parts.append(f":muscle: {workouts}")
         if custom:
-            parts.append(f":running: {custom} custom")
+            parts.append(f":runner: {custom}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
         if custom:
-            descriptions = database.get_weekly_custom_descriptions(user_id, monday)
-            lines.append(f"     _{', '.join(descriptions)}_")
+            custom_logs = database.get_weekly_custom_logs(user_id, monday)
+            custom_labels = []
+            for description, date_str in custom_logs:
+                d = datetime.strptime(date_str, "%Y-%m-%d")
+                friendly = f"{d.strftime('%b')} {d.day}"
+                custom_labels.append(description if description else f"custom workout on {friendly}")
+            lines.append(f"     _{', '.join(custom_labels)}_")
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 
