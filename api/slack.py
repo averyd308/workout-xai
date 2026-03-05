@@ -224,10 +224,10 @@ def handle_weekly_leaderboard(ack, respond):
         if custom:
             custom_logs = database.get_weekly_custom_logs(user_id, monday)
             custom_labels = []
-            for description, date_str in custom_logs:
+            for _, date_str in custom_logs:
                 d = datetime.strptime(date_str, "%Y-%m-%d")
                 friendly = f"{d.strftime('%b')} {d.day}"
-                custom_labels.append(description if description else f"custom workout on {friendly}")
+                custom_labels.append(f"custom workout on {friendly}")
             lines.append(f"     _{', '.join(custom_labels)}_")
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
