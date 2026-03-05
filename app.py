@@ -80,7 +80,7 @@ def post_daily_message(force=False):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Log your own activity with `/workout [description]`  •  Check your stats with `/mystats`",
+                    "text": "Log your own activity with `/workout [description]`  •  Check your stats with `/myworkoutstats`",
                 }
             ],
         },
@@ -173,7 +173,7 @@ def handle_workout(ack, command, respond):
     )
 
 
-@app.command("/mystats")
+@app.command("/myworkoutstats")
 def handle_mystats(ack, command, respond):
     ack()
     stats = database.get_user_stats(command["user_id"])

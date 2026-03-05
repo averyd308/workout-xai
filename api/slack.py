@@ -126,7 +126,7 @@ def handle_workout(ack, command):
         ack(f"Error: {e}")
 
 
-@bolt_app.command("/mystats")
+@bolt_app.command("/myworkoutstats")
 def handle_mystats(ack, command):
     try:
         stats = database.get_user_stats(command["user_id"])
