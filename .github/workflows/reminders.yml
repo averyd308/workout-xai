@@ -1,0 +1,14 @@
+name: Send Workout Reminders
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminders endpoint
+        run: |
+          curl -sf -X GET "${{ secrets.VERCEL_APP_URL }}/api/reminders" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"

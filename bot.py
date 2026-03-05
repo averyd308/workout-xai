@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from datetime import datetime
 
@@ -105,3 +106,58 @@ def post_daily_message(force=False):
     )
     database.save_daily_post(today, result["ts"], CHANNEL_ID, stretch["title"], workout["title"])
     logging.info(f"Daily post sent: ts={result['ts']}")
+
+
+# ── Reminder Helpers ──────────────────────────────────────────────────────────
+
+def parse_reminder_time(text):
+    """Parse a user-supplied time string into HH:MM (24h). Returns None on failure."""
+    text = text.strip().lower().replace(" ", "")
+    # Patterns: 9am, 9:00am, 14:30, 2:30pm, 9:00, 14
+    m = re.match(r"^(\d{1,2})(?::(\d{2}))?(am|pm)?$", text)
+    if not m:
+        return None
+    hour, minute, meridiem = int(m.group(1)), int(m.group(2) or 0), m.group(3)
+    if meridiem == "pm" and hour != 12:
+        hour += 12
+    elif meridiem == "am" and hour == 12:
+        hour = 0
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return f"{hour:02d}:{minute:02d}"
+
+
+def send_reminder_dm(client, user_id):
+    """DM a user reminding them to check today's workout."""
+    today_post = database.get_today_post()
+    if today_post:
+        stretch = today_post.get("stretch_option", "today's stretch")
+        workout = today_post.get("workout_option", "today's workout")
+        body = (
+            f":alarm_clock: *Workout reminder!*\n\n"
+            f"Don't forget to check today's movement options in <#{CHANNEL_ID}>:\n"
+            f":person_in_lotus_position: *{stretch}*\n"
+            f":muscle: *{workout}*\n\n"
+            f"React to the post when you're done to log your activity!"
+        )
+    else:
+        body = (
+            f":alarm_clock: *Workout reminder!*\n\n"
+            f"Head over to <#{CHANNEL_ID}> to check today's movement options and get moving!"
+        )
+    try:
+        dm = client.conversations_open(users=user_id)
+        client.chat_postMessage(channel=dm["channel"]["id"], text=body)
+    except Exception as e:
+        logging.error(f"Failed to send reminder DM to {user_id}: {e}")
+
+
+def send_pending_reminders(client, timezone):
+    """Send DMs to all users whose reminder time matches the current HH:MM."""
+    import pytz
+    tz = pytz.timezone(timezone)
+    current_time = datetime.now(tz).strftime("%H:%M")
+    user_ids = database.get_reminders_for_time(current_time)
+    for user_id in user_ids:
+        send_reminder_dm(client, user_id)
+        logging.info(f"Sent reminder DM to {user_id} at {current_time}")

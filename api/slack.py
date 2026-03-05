@@ -9,7 +9,7 @@ from flask import Flask, request
 from slack_bolt.adapter.flask import SlackRequestHandler
 
 import database
-from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, post_daily_message
+from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, post_daily_message, parse_reminder_time
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -283,6 +283,47 @@ def handle_post_daily(ack, respond):
         respond(":white_check_mark: Daily workout posted!")
     except Exception as e:
         logging.error(f"/postdaily error: {e}")
+        respond(f"Error: {e}")
+
+
+@bolt_app.command("/setreminder")
+def handle_set_reminder(ack, command, respond):
+    ack()
+    try:
+        text = command["text"].strip()
+        if not text:
+            respond("Usage: `/setreminder 9:00am`  or  `/setreminder 14:30`\nI'll DM you a reminder at that time each day.")
+            return
+        time_str = parse_reminder_time(text)
+        if not time_str:
+            respond(":x: Couldn't parse that time. Try something like `9:00am`, `2:30pm`, or `14:30`.")
+            return
+        user_id = command["user_id"]
+        database.set_user_reminder(user_id, time_str)
+        # Display back in friendly 12h format
+        h, m = int(time_str[:2]), int(time_str[3:])
+        ampm = "am" if h < 12 else "pm"
+        display_h = h % 12 or 12
+        display = f"{display_h}:{m:02d}{ampm}"
+        respond(f":alarm_clock: Got it! I'll DM you a reminder at *{display}* each day to check the workout.")
+    except Exception as e:
+        logging.error(f"/setreminder error: {e}")
+        respond(f"Error: {e}")
+
+
+@bolt_app.command("/cancelreminder")
+def handle_cancel_reminder(ack, command, respond):
+    ack()
+    try:
+        user_id = command["user_id"]
+        existing = database.get_user_reminder(user_id)
+        if not existing:
+            respond("You don't have a reminder set. Use `/setreminder 9:00am` to set one.")
+            return
+        database.delete_user_reminder(user_id)
+        respond(":white_check_mark: Your daily reminder has been cancelled.")
+    except Exception as e:
+        logging.error(f"/cancelreminder error: {e}")
         respond(f"Error: {e}")
 
 

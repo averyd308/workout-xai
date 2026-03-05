@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from flask import Flask, request
 
 import database
-from bot import post_daily_message
+from bot import post_daily_message, send_pending_reminders
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -22,6 +22,21 @@ def daily_cron():
     if os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
         return "Unauthorized", 401
     post_daily_message()
+    return "ok"
+
+
+@flask_app.route("/api/reminders", methods=["GET", "POST"])
+def reminders_cron():
+    cron_secret = os.environ.get("CRON_SECRET")
+    if cron_secret:
+        # Accept requests from Vercel cron OR any caller with the correct secret token
+        vercel_ok = request.headers.get("x-vercel-cron") == "1"
+        secret_ok = request.headers.get("x-cron-secret") == cron_secret
+        if not (vercel_ok or secret_ok):
+            return "Unauthorized", 401
+    from bot import bolt_app
+    timezone = os.environ.get("TIMEZONE", "America/New_York")
+    send_pending_reminders(bolt_app.client, timezone)
     return "ok"
 
 

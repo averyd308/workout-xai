@@ -147,3 +147,32 @@ def get_scheduled_options(date_str):
         r = result.data[0]
         return (r.get("stretch_title"), r.get("stretch_description"), r.get("workout_title"), r.get("workout_description"), r.get("custom_title"), r.get("custom_description"))
     return None
+
+
+# ── User Reminders ────────────────────────────────────────────────────────────
+
+def set_user_reminder(user_id, reminder_time):
+    """Store a personal reminder time (HH:MM, 24h) for a user."""
+    client = get_client()
+    existing = client.table("user_reminders").select("user_id").eq("user_id", user_id).execute()
+    if existing.data:
+        client.table("user_reminders").update({"reminder_time": reminder_time}).eq("user_id", user_id).execute()
+    else:
+        client.table("user_reminders").insert({"user_id": user_id, "reminder_time": reminder_time}).execute()
+
+
+def get_user_reminder(user_id):
+    """Return the stored reminder time (HH:MM) for a user, or None."""
+    result = get_client().table("user_reminders").select("reminder_time").eq("user_id", user_id).execute()
+    return result.data[0]["reminder_time"] if result.data else None
+
+
+def delete_user_reminder(user_id):
+    """Remove a user's personal reminder."""
+    get_client().table("user_reminders").delete().eq("user_id", user_id).execute()
+
+
+def get_reminders_for_time(time_str):
+    """Return list of user_ids whose reminder_time matches time_str (HH:MM)."""
+    result = get_client().table("user_reminders").select("user_id").eq("reminder_time", time_str).execute()
+    return [row["user_id"] for row in result.data]

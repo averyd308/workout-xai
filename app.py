@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 import database
 import workouts
+from bot import parse_reminder_time, send_pending_reminders
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -269,6 +270,40 @@ def handle_alltime_leaderboard(ack, respond):
     respond(_build_leaderboard_blocks("All-Time Leaderboard", rows))
 
 
+# ── Reminder Commands ─────────────────────────────────────────────────────────
+
+@app.command("/setreminder")
+def handle_set_reminder(ack, command, respond):
+    ack()
+    text = command["text"].strip()
+    if not text:
+        respond("Usage: `/setreminder 9:00am`  or  `/setreminder 14:30`\nI'll DM you a reminder at that time each day.")
+        return
+    time_str = parse_reminder_time(text)
+    if not time_str:
+        respond(":x: Couldn't parse that time. Try something like `9:00am`, `2:30pm`, or `14:30`.")
+        return
+    user_id = command["user_id"]
+    database.set_user_reminder(user_id, time_str)
+    h, m = int(time_str[:2]), int(time_str[3:])
+    ampm = "am" if h < 12 else "pm"
+    display_h = h % 12 or 12
+    display = f"{display_h}:{m:02d}{ampm}"
+    respond(f":alarm_clock: Got it! I'll DM you a reminder at *{display}* each day to check the workout.")
+
+
+@app.command("/cancelreminder")
+def handle_cancel_reminder(ack, command, respond):
+    ack()
+    user_id = command["user_id"]
+    existing = database.get_user_reminder(user_id)
+    if not existing:
+        respond("You don't have a reminder set. Use `/setreminder 9:00am` to set one.")
+        return
+    database.delete_user_reminder(user_id)
+    respond(":white_check_mark: Your daily reminder has been cancelled.")
+
+
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -281,8 +316,15 @@ if __name__ == "__main__":
         minute=POST_MINUTE,
         timezone=TIMEZONE,
     )
+    scheduler.add_job(
+        send_pending_reminders,
+        trigger="cron",
+        minute="*",
+        timezone=TIMEZONE,
+        args=[app.client, TIMEZONE],
+    )
     scheduler.start()
-    logging.info(f"Scheduler started — daily post at {POST_HOUR}:{POST_MINUTE:02d} ({TIMEZONE})")
+    logging.info(f"Scheduler started — daily post at {POST_HOUR}:{POST_MINUTE:02d} ({TIMEZONE}), reminders checked every minute")
 
     if "--post-now" in sys.argv:
         logging.info("--post-now flag detected, posting immediately...")
