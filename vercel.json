@@ -3,11 +3,5 @@
     { "source": "/api/slack", "destination": "/api/slack" },
     { "source": "/api/cron", "destination": "/api/cron" },
     { "source": "/api/reminders", "destination": "/api/cron" }
-  ],
-  "crons": [
-    {
-      "path": "/api/reminders",
-      "schedule": "* * * * *"
-    }
   ]
 }
