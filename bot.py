@@ -17,6 +17,7 @@ bolt_app = App(
 CHANNEL_ID = os.environ["SLACK_CHANNEL_ID"]
 STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
+CUSTOM_EMOJI = "runner"
 
 
 def post_daily_message(force=False):
@@ -78,9 +79,9 @@ def post_daily_message(force=False):
                 "text": {
                     "type": "mrkdwn",
                     "text": (
-                        f":running:  *{custom_suggestion['title']}*\n"
+                        f":runner:  *{custom_suggestion['title']}*\n"
                         f"_{custom_suggestion['description']}_\n"
-                        f"→ Log it with `/workout {custom_suggestion['title']}`"
+                        f"→ React with :runner: when done"
                     ),
                 },
             },
@@ -93,7 +94,7 @@ def post_daily_message(force=False):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Log your own activity with `/workout [description]`  •  Check your stats with `/mystats`",
+                    "text": "Did a separate workout? Don't forget to log it with `/workout [description]`  •  Check your stats with `/mystats`",
                 }
             ],
         },

@@ -9,7 +9,7 @@ from flask import Flask, request
 from slack_bolt.adapter.flask import SlackRequestHandler
 
 import database
-from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, post_daily_message, parse_reminder_input
+from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -60,6 +60,20 @@ def handle_reaction_added(event):
                 text=f":muscle: Great workout! You've logged *{count}* workout{'s' if count != 1 else ''} total.",
             )
 
+    elif emoji == CUSTOM_EMOJI:
+        scheduled = database.get_scheduled_options(post["date"])
+        custom_title = scheduled[4] if scheduled and scheduled[4] else None
+        if custom_title:
+            logged = database.log_activity(user_id, "custom", custom_title)
+            if logged:
+                stats = database.get_user_stats(user_id)
+                count = stats.get("custom", 0)
+                bolt_app.client.chat_postEphemeral(
+                    channel=CHANNEL_ID,
+                    user=user_id,
+                    text=f":runner: Nice work! You've logged *{count}* custom {'activity' if count == 1 else 'activities'} total.",
+                )
+
 
 @bolt_app.event("reaction_removed")
 def handle_reaction_removed(event):
@@ -77,6 +91,8 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "stretch")
     elif emoji == WORKOUT_EMOJI:
         database.remove_activity(user_id, "workout")
+    elif emoji == CUSTOM_EMOJI:
+        database.remove_activity(user_id, "custom")
 
 
 # ── Slash Commands ─────────────────────────────────────────────────────────────
