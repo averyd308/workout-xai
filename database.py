@@ -4,8 +4,13 @@ from datetime import date, timedelta
 from supabase import create_client
 
 
+_client = None
+
 def get_client():
-    return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+    global _client
+    if _client is None:
+        _client = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+    return _client
 
 
 def init_db():
