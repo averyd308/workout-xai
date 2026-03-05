@@ -133,7 +133,6 @@ def handle_workout(ack, command):
 def handle_mystats(ack, command):
     try:
         stats = database.get_user_stats(command["user_id"])
-        custom_logs = database.get_custom_activity_logs(command["user_id"])
     except Exception as e:
         ack(f"DB error: {e}")
         return
@@ -145,22 +144,14 @@ def handle_mystats(ack, command):
     workout = stats.get("workout", 0)
     custom = stats.get("custom", 0)
     total = sum(stats.values())
-
-    lines = [
-        f"*Your activity stats (all time):*",
-        f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
-        f":muscle:  Workouts: *{workout}*",
-        f":runner:  Custom activities: *{custom}*",
-    ]
-    if custom_logs:
-        from datetime import datetime
-        for description, date_str in custom_logs:
-            d = datetime.strptime(date_str, "%Y-%m-%d")
-            friendly = f"{d.strftime('%b')} {d.day}"
-            label = description if description else "Custom workout"
-            lines.append(f"     • {label} _({friendly})_")
-    lines += ["─────────────────────", f"Total: *{total}* activities"]
-    ack("\n".join(lines))
+    ack(
+        f"*Your activity stats (all time):*\n"
+        f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
+        f":muscle:  Workouts: *{workout}*\n"
+        f":runner:  Custom activities: *{custom}*\n"
+        f"─────────────────────\n"
+        f"Total: *{total}* activities"
+    )
 
 
 @bolt_app.command("/teamstats")
@@ -204,7 +195,6 @@ def handle_weekly_leaderboard(ack, respond):
         respond({"text": "No activity logged this week yet. Be the first!", "response_type": "in_channel"})
         return
 
-    from datetime import datetime
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
     today = date.today()
     title = f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*"
@@ -221,14 +211,6 @@ def handle_weekly_leaderboard(ack, respond):
             parts.append(f":runner: {custom}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
-        if custom:
-            custom_logs = database.get_weekly_custom_logs(user_id, monday)
-            custom_labels = []
-            for _, date_str in custom_logs:
-                d = datetime.strptime(date_str, "%Y-%m-%d")
-                friendly = f"{d.strftime('%b')} {d.day}"
-                custom_labels.append(f"custom workout on {friendly}")
-            lines.append(f"     _{', '.join(custom_labels)}_")
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 
