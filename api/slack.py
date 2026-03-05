@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import urllib.parse
 from datetime import date, timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -345,6 +346,35 @@ def handle_cancel_reminder(ack, command, respond):
     except Exception as e:
         logging.error(f"/cancelreminder error: {e}")
         respond(f"Error: {e}")
+
+
+# ── Strava Commands ────────────────────────────────────────────────────────────
+
+@bolt_app.command("/connectstrava")
+def handle_connect_strava(ack, command):
+    user_id = command["user_id"]
+    client_id = os.environ.get("STRAVA_CLIENT_ID", "")
+    redirect_uri = urllib.parse.quote("https://workout-xai.vercel.app/api/strava/callback")
+    auth_url = (
+        f"https://www.strava.com/oauth/authorize"
+        f"?client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&response_type=code"
+        f"&scope=activity:read_all"
+        f"&state={user_id}"
+    )
+    ack(f":strava: <{auth_url}|Click here to connect your Strava account> — only you can see this link.")
+
+
+@bolt_app.command("/disconnectstrava")
+def handle_disconnect_strava(ack, command):
+    user_id = command["user_id"]
+    existing = database.get_strava_tokens_by_slack_user(user_id)
+    if not existing:
+        ack("You don't have a Strava account connected.")
+        return
+    database.delete_strava_tokens(user_id)
+    ack(":white_check_mark: Your Strava account has been disconnected.")
 
 
 # ── Route ──────────────────────────────────────────────────────────────────────

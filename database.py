@@ -165,6 +165,38 @@ def get_scheduled_options(date_str):
     return None
 
 
+# ── Strava Tokens ─────────────────────────────────────────────────────────────
+
+def save_strava_tokens(slack_user_id, athlete_id, access_token, refresh_token, expires_at):
+    client = get_client()
+    data = {
+        "slack_user_id": slack_user_id,
+        "strava_athlete_id": athlete_id,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_at": expires_at,
+    }
+    existing = client.table("strava_tokens").select("slack_user_id").eq("slack_user_id", slack_user_id).execute()
+    if existing.data:
+        client.table("strava_tokens").update(data).eq("slack_user_id", slack_user_id).execute()
+    else:
+        client.table("strava_tokens").insert(data).execute()
+
+
+def get_strava_tokens_by_slack_user(slack_user_id):
+    result = get_client().table("strava_tokens").select("*").eq("slack_user_id", slack_user_id).execute()
+    return result.data[0] if result.data else None
+
+
+def get_strava_tokens_by_athlete(athlete_id):
+    result = get_client().table("strava_tokens").select("*").eq("strava_athlete_id", athlete_id).execute()
+    return result.data[0] if result.data else None
+
+
+def delete_strava_tokens(slack_user_id):
+    get_client().table("strava_tokens").delete().eq("slack_user_id", slack_user_id).execute()
+
+
 # ── User Reminders ────────────────────────────────────────────────────────────
 
 def set_user_reminder(user_id, reminder_time, timezone):

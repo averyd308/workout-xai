@@ -2,6 +2,8 @@
   "rewrites": [
     { "source": "/api/slack", "destination": "/api/slack" },
     { "source": "/api/cron", "destination": "/api/cron" },
-    { "source": "/api/reminders", "destination": "/api/cron" }
+    { "source": "/api/reminders", "destination": "/api/cron" },
+    { "source": "/api/strava/callback", "destination": "/api/strava_callback" },
+    { "source": "/api/strava/webhook", "destination": "/api/strava_webhook" }
   ]
 }
