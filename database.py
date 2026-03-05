@@ -20,7 +20,7 @@ def save_daily_post(date_str, message_ts, channel_id, stretch_option, workout_op
         "channel_id": channel_id,
         "stretch_option": stretch_option,
         "workout_option": workout_option,
-    }).execute()
+    }, on_conflict="date").execute()
 
 
 def get_today_post():
