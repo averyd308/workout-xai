@@ -94,7 +94,7 @@ def post_daily_message(force=False):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Did a separate workout? Don't forget to log it with `/workout [description]`  •  Check your stats with `/myworkoutstats`",
+                    "text": "Did a separate workout? Don't forget to log it with `/workout [description]`  •  Check your stats with `/userstats`",
                 }
             ],
         },
