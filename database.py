@@ -151,20 +151,22 @@ def get_scheduled_options(date_str):
 
 # ── User Reminders ────────────────────────────────────────────────────────────
 
-def set_user_reminder(user_id, reminder_time):
-    """Store a personal reminder time (HH:MM, 24h) for a user."""
+def set_user_reminder(user_id, reminder_time, timezone):
+    """Store a personal reminder time (HH:MM, 24h) and IANA timezone for a user."""
     client = get_client()
     existing = client.table("user_reminders").select("user_id").eq("user_id", user_id).execute()
     if existing.data:
-        client.table("user_reminders").update({"reminder_time": reminder_time}).eq("user_id", user_id).execute()
+        client.table("user_reminders").update({"reminder_time": reminder_time, "timezone": timezone}).eq("user_id", user_id).execute()
     else:
-        client.table("user_reminders").insert({"user_id": user_id, "reminder_time": reminder_time}).execute()
+        client.table("user_reminders").insert({"user_id": user_id, "reminder_time": reminder_time, "timezone": timezone}).execute()
 
 
 def get_user_reminder(user_id):
-    """Return the stored reminder time (HH:MM) for a user, or None."""
-    result = get_client().table("user_reminders").select("reminder_time").eq("user_id", user_id).execute()
-    return result.data[0]["reminder_time"] if result.data else None
+    """Return (reminder_time, timezone) for a user, or None."""
+    result = get_client().table("user_reminders").select("reminder_time,timezone").eq("user_id", user_id).execute()
+    if result.data:
+        return result.data[0]["reminder_time"], result.data[0]["timezone"]
+    return None
 
 
 def delete_user_reminder(user_id):
@@ -172,7 +174,13 @@ def delete_user_reminder(user_id):
     get_client().table("user_reminders").delete().eq("user_id", user_id).execute()
 
 
-def get_reminders_for_time(time_str):
-    """Return list of user_ids whose reminder_time matches time_str (HH:MM)."""
-    result = get_client().table("user_reminders").select("user_id").eq("reminder_time", time_str).execute()
+def get_distinct_reminder_timezones():
+    """Return list of unique IANA timezone strings stored in user_reminders."""
+    result = get_client().table("user_reminders").select("timezone").execute()
+    return list(set(row["timezone"] for row in result.data if row.get("timezone")))
+
+
+def get_reminders_for_time(time_str, timezone):
+    """Return list of user_ids whose reminder_time and timezone match."""
+    result = get_client().table("user_reminders").select("user_id").eq("reminder_time", time_str).eq("timezone", timezone).execute()
     return [row["user_id"] for row in result.data]

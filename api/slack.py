@@ -9,7 +9,7 @@ from flask import Flask, request
 from slack_bolt.adapter.flask import SlackRequestHandler
 
 import database
-from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, post_daily_message, parse_reminder_time
+from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, post_daily_message, parse_reminder_input
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -292,20 +292,23 @@ def handle_set_reminder(ack, command, respond):
     try:
         text = command["text"].strip()
         if not text:
-            respond("Usage: `/setreminder 9:00am`  or  `/setreminder 14:30`\nI'll DM you a reminder at that time each day.")
+            respond("Usage: `/setreminder 9:00am ET`  or  `/setreminder 14:30 America/Chicago`\nTimezone is optional — defaults to the bot's timezone if omitted.")
             return
-        time_str = parse_reminder_time(text)
+        default_tz = os.environ.get("TIMEZONE", "America/New_York")
+        time_str, tz = parse_reminder_input(text, default_tz)
         if not time_str:
-            respond(":x: Couldn't parse that time. Try something like `9:00am`, `2:30pm`, or `14:30`.")
+            respond(":x: Couldn't parse that time. Try something like `9:00am ET`, `2:30pm PT`, or `14:30 America/Chicago`.")
+            return
+        if not tz:
+            respond(":x: Couldn't recognise that timezone. Try an abbreviation like `ET`, `CT`, `MT`, `PT`, or a full name like `America/New_York`.")
             return
         user_id = command["user_id"]
-        database.set_user_reminder(user_id, time_str)
-        # Display back in friendly 12h format
+        database.set_user_reminder(user_id, time_str, tz)
         h, m = int(time_str[:2]), int(time_str[3:])
         ampm = "am" if h < 12 else "pm"
         display_h = h % 12 or 12
         display = f"{display_h}:{m:02d}{ampm}"
-        respond(f":alarm_clock: Got it! I'll DM you a reminder at *{display}* each day to check the workout.")
+        respond(f":alarm_clock: Got it! I'll DM you a reminder at *{display} {tz}* each day to check the workout.")
     except Exception as e:
         logging.error(f"/setreminder error: {e}")
         respond(f"Error: {e}")

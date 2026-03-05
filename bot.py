@@ -110,11 +110,19 @@ def post_daily_message(force=False):
 
 # ── Reminder Helpers ──────────────────────────────────────────────────────────
 
-def parse_reminder_time(text):
-    """Parse a user-supplied time string into HH:MM (24h). Returns None on failure."""
-    text = text.strip().lower().replace(" ", "")
-    # Patterns: 9am, 9:00am, 14:30, 2:30pm, 9:00, 14
-    m = re.match(r"^(\d{1,2})(?::(\d{2}))?(am|pm)?$", text)
+TZ_ALIASES = {
+    "et": "America/New_York", "est": "America/New_York", "edt": "America/New_York",
+    "ct": "America/Chicago",  "cst": "America/Chicago",  "cdt": "America/Chicago",
+    "mt": "America/Denver",   "mst": "America/Denver",   "mdt": "America/Denver",
+    "pt": "America/Los_Angeles", "pst": "America/Los_Angeles", "pdt": "America/Los_Angeles",
+    "utc": "UTC", "gmt": "UTC",
+}
+
+
+def parse_reminder_time(time_text):
+    """Parse a time string into HH:MM (24h). Returns None on failure."""
+    time_text = time_text.strip().lower().replace(" ", "")
+    m = re.match(r"^(\d{1,2})(?::(\d{2}))?(am|pm)?$", time_text)
     if not m:
         return None
     hour, minute, meridiem = int(m.group(1)), int(m.group(2) or 0), m.group(3)
@@ -125,6 +133,29 @@ def parse_reminder_time(text):
     if not (0 <= hour <= 23 and 0 <= minute <= 59):
         return None
     return f"{hour:02d}:{minute:02d}"
+
+
+def parse_timezone(tz_text, default_timezone):
+    """Resolve a user-supplied timezone string to an IANA name. Returns None on failure."""
+    import pytz
+    if not tz_text:
+        return default_timezone
+    resolved = TZ_ALIASES.get(tz_text.strip().lower(), tz_text.strip())
+    try:
+        pytz.timezone(resolved)
+        return resolved
+    except pytz.exceptions.UnknownTimeZoneError:
+        return None
+
+
+def parse_reminder_input(text, default_timezone):
+    """Parse '/setreminder 9:00am ET' into (time_str, iana_timezone) or (None, None)."""
+    parts = text.strip().split(None, 1)
+    time_str = parse_reminder_time(parts[0])
+    if not time_str:
+        return None, None
+    tz = parse_timezone(parts[1] if len(parts) > 1 else None, default_timezone)
+    return time_str, tz
 
 
 def send_reminder_dm(client, user_id):
@@ -152,12 +183,17 @@ def send_reminder_dm(client, user_id):
         logging.error(f"Failed to send reminder DM to {user_id}: {e}")
 
 
-def send_pending_reminders(client, timezone):
-    """Send DMs to all users whose reminder time matches the current HH:MM."""
+def send_pending_reminders(client, default_timezone):
+    """Send DMs to all users whose reminder time matches the current time in their timezone."""
     import pytz
-    tz = pytz.timezone(timezone)
-    current_time = datetime.now(tz).strftime("%H:%M")
-    user_ids = database.get_reminders_for_time(current_time)
-    for user_id in user_ids:
-        send_reminder_dm(client, user_id)
-        logging.info(f"Sent reminder DM to {user_id} at {current_time}")
+    now_utc = datetime.now(pytz.utc)
+    timezones = database.get_distinct_reminder_timezones()
+    for tz_name in timezones:
+        try:
+            current_time = now_utc.astimezone(pytz.timezone(tz_name)).strftime("%H:%M")
+            user_ids = database.get_reminders_for_time(current_time, tz_name)
+            for user_id in user_ids:
+                send_reminder_dm(client, user_id)
+                logging.info(f"Sent reminder DM to {user_id} at {current_time} ({tz_name})")
+        except Exception as e:
+            logging.error(f"Error processing reminders for timezone {tz_name}: {e}")
