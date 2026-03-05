@@ -71,6 +71,12 @@ def get_user_stats(user_id):
     return stats
 
 
+def get_custom_activity_logs(user_id):
+    """Return list of (description, date_str) for all custom activities, newest first."""
+    result = get_client().table("activity_logs").select("description,date").eq("user_id", user_id).eq("activity_type", "custom").order("date", desc=True).execute()
+    return [(row["description"], row["date"]) for row in result.data]
+
+
 def get_weekly_stats():
     week_ago = str(date.today() - timedelta(days=7))
     result = get_client().table("activity_logs").select("user_id").gte("date", week_ago).execute()
