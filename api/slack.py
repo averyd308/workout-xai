@@ -436,7 +436,8 @@ def _start_live_session(user_id, client, youtube_url=None):
                     "text": (
                         f":tv: *<@{user_id}> is starting a group video workout!*\n"
                         f"Everyone will watch and follow along in sync.\n\n"
-                        f"<{join_url}|:arrow_right:  Click here to join the live session>"
+                        f"<{join_url}|:arrow_right:  Click here to join the live session>\n\n"
+                        f"_React with :tv: after the workout to log your participation!_"
                     ),
                 },
             }
