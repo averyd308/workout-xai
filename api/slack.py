@@ -417,13 +417,14 @@ def _start_workout_modal_view():
     }
 
 
-def _start_live_session(user_id, client, youtube_url=None):
-    """Create a live video session, post to channel, and DM the host."""
+def _start_live_session(user_id, client, youtube_url=None, channel_id=None):
+    """Create a live video session, post to channel, and send host an ephemeral."""
     session_id = secrets.token_urlsafe(8)
     host_token = secrets.token_urlsafe(16)
     base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
     join_url = f"{base_url}/workout?id={session_id}"
     host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
+    post_channel = channel_id or CHANNEL_ID
 
     msg = client.chat_postMessage(
         channel=CHANNEL_ID,
@@ -448,28 +449,29 @@ def _start_live_session(user_id, client, youtube_url=None):
 
     dm_note = "Press *Start* when everyone is ready!" if youtube_url else "Set the video with `/setvideo [YouTube URL]`, then press *Start*."
     try:
-        dm = client.conversations_open(users=user_id)
-        client.chat_postMessage(
-            channel=dm["channel"]["id"],
+        client.chat_postEphemeral(
+            channel=post_channel,
+            user=user_id,
             text=(
-                f":crown: You started a group video session!\n"
-                f"Use this private link to control the video:\n{host_url}\n\n"
+                f":crown: *Your host link (only you can see this):*\n{host_url}\n\n"
                 f"_Keep this link private — it gives you host controls._\n\n"
                 f"{dm_note}"
             ),
         )
     except Exception as e:
-        logging.error(f"live session DM error: {e}")
+        logging.error(f"live session ephemeral error: {e}")
 
 
-def _open_start_modal(client, trigger_id):
-    client.views_open(trigger_id=trigger_id, view=_start_workout_modal_view())
+def _open_start_modal(client, trigger_id, channel_id=None):
+    view = _start_workout_modal_view()
+    view["private_metadata"] = channel_id or CHANNEL_ID
+    client.views_open(trigger_id=trigger_id, view=view)
 
 
 @bolt_app.command("/startliveyt")
 def handle_start_video_session(ack, command, client):
     ack()
-    _open_start_modal(client, command["trigger_id"])
+    _open_start_modal(client, command["trigger_id"], channel_id=command["channel_id"])
 
 
 @bolt_app.shortcut("start_live_workout")
@@ -481,7 +483,7 @@ def handle_start_live_shortcut(ack, shortcut, client):
 @bolt_app.action("start_live_workout_btn")
 def handle_start_workout_button(ack, body, client):
     ack()
-    _open_start_modal(client, body["trigger_id"])
+    _open_start_modal(client, body["trigger_id"], channel_id=body.get("channel", {}).get("id"))
 
 
 @bolt_app.view("start_workout_modal")
@@ -493,7 +495,8 @@ def handle_start_workout_modal(ack, view, body, client):
         return
     ack()
     try:
-        _start_live_session(body["user"]["id"], client, youtube_url=f"https://www.youtube.com/watch?v={video_id}")
+        channel_id = view.get("private_metadata") or CHANNEL_ID
+        _start_live_session(body["user"]["id"], client, youtube_url=f"https://www.youtube.com/watch?v={video_id}", channel_id=channel_id)
     except Exception as e:
         logging.error(f"start_workout_modal error: {e}")
 
