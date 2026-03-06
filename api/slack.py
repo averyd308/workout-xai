@@ -386,10 +386,9 @@ def handle_start_workout(ack, command, respond):
         templates = database.get_workout_templates()
         names = ", ".join(f"`{t['name']}`" for t in templates) if templates else "none"
         respond(
-            f"Usage:\n"
-            f"• `/startlive [template name]` — guided exercise session\n"
-            f"• `/startlive YT` — start a video session (set the video with `/setvideo`)\n"
-            f"Available templates: {names}"
+            f"Usage: `/startlive [template name]`\n"
+            f"Available templates: {names}\n"
+            f"To start a video session: `/startliveYT`"
         )
         return
 
@@ -400,9 +399,7 @@ def handle_start_workout(ack, command, respond):
     join_url = f"{base_url}/workout?id={session_id}"
     host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
 
-    # Detect "YT" keyword
-    video_id = None
-    is_yt_session = text.strip().upper() == "YT"
+    is_yt_session = False
 
     if is_yt_session:
         # ── YouTube video session ──────────────────────────────────────────
@@ -478,6 +475,57 @@ def handle_start_workout(ack, command, respond):
         logging.error(f"/startlive DM error: {e}")
 
     respond(":white_check_mark: Session started! Join link posted to the channel.")
+
+
+@bolt_app.command("/startliveYT")
+def handle_start_video_session(ack, command, respond):
+    ack()
+    try:
+        user_id = command["user_id"]
+        session_id = secrets.token_urlsafe(8)
+        host_token = secrets.token_urlsafe(16)
+        base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
+        join_url = f"{base_url}/workout?id={session_id}"
+        host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
+
+        database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None)
+
+        bolt_app.client.chat_postMessage(
+            channel=CHANNEL_ID,
+            text=f":tv: <@{user_id}> started a group video workout! Join here: {join_url}",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": (
+                            f":tv: *<@{user_id}> is starting a group video workout!*\n"
+                            f"Everyone will watch and follow along in sync.\n\n"
+                            f"<{join_url}|:arrow_right:  Click here to join the live session>"
+                        ),
+                    },
+                }
+            ],
+        )
+
+        try:
+            dm = bolt_app.client.conversations_open(users=user_id)
+            bolt_app.client.chat_postMessage(
+                channel=dm["channel"]["id"],
+                text=(
+                    f":crown: You started a group video session!\n"
+                    f"Use this private link to control the video:\n{host_url}\n\n"
+                    f"_Keep this link private — it gives you host controls._\n\n"
+                    f"Set the video with `/setvideo [YouTube URL]`, then press Start."
+                ),
+            )
+        except Exception as e:
+            logging.error(f"/startliveYT DM error: {e}")
+
+        respond(":white_check_mark: Video session started! Use `/setvideo [YouTube URL]` to set the video, then press Start in the session.")
+    except Exception as e:
+        logging.error(f"/startliveYT error: {e}")
+        respond(f"Error: {e}")
 
 
 @bolt_app.command("/setvideo")
