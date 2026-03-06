@@ -28,9 +28,11 @@ def get_session(session_id):
     session = database.get_workout_session(session_id)
     if not session:
         return jsonify({"error": "Session not found"}), 404
-    template = database.get_workout_template(session["template_id"])
-    if not template:
-        return jsonify({"error": "Template not found"}), 404
+    template = None
+    if session.get("template_id"):
+        template = database.get_workout_template(session["template_id"])
+        if not template:
+            return jsonify({"error": "Template not found"}), 404
     participants = database.get_session_participants(session_id)
     return jsonify({"session": session, "template": template, "participants": participants})
 
@@ -60,8 +62,8 @@ def control_session(session_id):
     if session["host_token"] != host_token:
         return jsonify({"error": "Unauthorized"}), 403
 
-    template = database.get_workout_template(session["template_id"])
-    exercises = template["exercises"]
+    template = database.get_workout_template(session["template_id"]) if session.get("template_id") else None
+    exercises = template["exercises"] if template else []
     num_exercises = len(exercises)
     now = time.time()
 

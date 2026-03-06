@@ -12,9 +12,9 @@
       --card: #1a1a22;
       --border: #2a2a38;
       --accent: #6c63ff;
-      --accent2: #ff6584;
       --green: #43d98f;
       --yellow: #ffd166;
+      --red: #ff6584;
       --text: #f0f0f5;
       --muted: #888899;
       --radius: 14px;
@@ -28,431 +28,324 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       padding: 1.5rem 1rem 3rem;
     }
 
-    .screen { display: none; width: 100%; max-width: 520px; }
+    .screen { display: none; width: 100%; max-width: 560px; }
     .screen.active { display: block; }
 
-    /* ── Header ── */
-    .page-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-    .page-header h1 { font-size: 1.1rem; color: var(--muted); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
-    .page-header .workout-name { font-size: 1.6rem; font-weight: 700; color: var(--text); margin-top: 0.25rem; }
+    .page-header { text-align: center; margin-bottom: 1.25rem; }
+    .page-header .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+    .page-header .name  { font-size: 1.5rem; font-weight: 700; margin-top: 0.2rem; }
 
-    /* ── Card ── */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 1rem;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 0.875rem;
     }
 
-    /* ── Button ── */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      padding: 0.65rem 1.4rem;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-      font-family: inherit;
-      font-weight: 600;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+      padding: 0.65rem 1.4rem; border-radius: 8px; border: none; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; font-weight: 600;
       transition: opacity 0.15s, transform 0.1s;
-      text-decoration: none;
     }
     .btn:active { transform: scale(0.97); }
-    .btn:disabled { opacity: 0.4; cursor: default; }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
-    .btn-green { background: var(--green); color: #0a2e1e; }
-    .btn-green:hover:not(:disabled) { opacity: 0.88; }
+    .btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-green   { background: var(--green);  color: #082b1a; }
     .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+    .btn-lg { padding: 0.8rem 1.5rem; font-size: 1rem; width: 100%; }
+    .btn-primary:hover:not(:disabled),
+    .btn-green:hover:not(:disabled),
+    .btn-danger:hover:not(:disabled)  { opacity: 0.85; }
     .btn-outline:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-    .btn-danger { background: var(--accent2); color: white; }
-    .btn-danger:hover:not(:disabled) { opacity: 0.88; }
-    .btn-sm { padding: 0.45rem 1rem; font-size: 0.85rem; }
-    .btn-lg { padding: 0.85rem 2rem; font-size: 1.05rem; width: 100%; }
 
     input[type="text"] {
-      width: 100%;
-      padding: 0.7rem 1rem;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 1rem;
-      font-family: inherit;
-      transition: border-color 0.2s;
+      width: 100%; padding: 0.7rem 1rem;
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 1rem; font-family: inherit;
     }
     input[type="text"]:focus { outline: none; border-color: var(--accent); }
 
-    /* ── Join screen ── */
-    #screen-join .join-card { text-align: center; padding: 2rem 1.5rem; }
-    #screen-join h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-    #screen-join p { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
-    #join-error { color: var(--accent2); font-size: 0.88rem; margin-top: 0.5rem; min-height: 1.2em; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.28rem 0.75rem; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .badge-live    { background: rgba(67,217,143,0.12); border: 1px solid rgba(67,217,143,0.3); color: var(--green); }
+    .badge-live .dot    { background: var(--green); animation: blink 1.4s infinite; }
+    .badge-paused  { background: rgba(255,209,102,0.12); border: 1px solid rgba(255,209,102,0.3); color: var(--yellow); }
+    .badge-paused .dot  { background: var(--yellow); }
+    .badge-waiting { background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.3); color: var(--accent); }
+    .badge-waiting .dot { background: var(--accent); animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    /* ── Waiting screen ── */
-    .waiting-badge {
-      display: inline-block;
-      background: rgba(108,99,255,0.15);
-      border: 1px solid rgba(108,99,255,0.4);
-      color: var(--accent);
-      border-radius: 20px;
-      padding: 0.3rem 0.9rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 20px; padding: 0.22rem 0.65rem; font-size: 0.8rem; color: var(--muted);
     }
-    .participant-list { list-style: none; }
-    .participant-list li {
-      padding: 0.55rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.95rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .participant-list li:last-child { border-bottom: none; }
-    .participant-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
 
-    /* ── Exercise screen ── */
-    .exercise-progress {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
+    .waiting-list { list-style: none; }
+    .waiting-list li {
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;
     }
-    .progress-track {
-      flex: 1;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-      transition: width 0.4s ease;
-    }
-    .progress-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+    .waiting-list li:last-child { border-bottom: none; }
 
-    .exercise-name {
-      font-size: 1.75rem;
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 0.5rem;
-    }
-    .exercise-desc {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-    .video-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: var(--accent);
-      font-size: 0.88rem;
-      text-decoration: none;
-      margin-bottom: 1rem;
-    }
-    .video-link:hover { text-decoration: underline; }
-
-    /* Timer */
-    .timer-wrap {
-      text-align: center;
-      padding: 1.5rem 1rem;
-    }
-    .timer-circle {
-      position: relative;
-      width: 160px;
-      height: 160px;
-      margin: 0 auto 1rem;
-    }
-    .timer-svg { transform: rotate(-90deg); }
-    .timer-track { fill: none; stroke: var(--border); stroke-width: 8; }
-    .timer-fill {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.8s linear, stroke 0.4s;
-    }
-    .timer-fill.rest { stroke: var(--yellow); }
-    .timer-fill.done { stroke: var(--green); }
-    .timer-number {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 2.5rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-    }
-    .timer-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-top: -0.25rem;
-    }
-
-    /* Status badge */
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-    }
-    .status-badge .dot { width: 7px; height: 7px; border-radius: 50%; }
-    .status-active { background: rgba(67,217,143,0.12); border: 1px solid rgba(67,217,143,0.3); color: var(--green); }
-    .status-active .dot { background: var(--green); animation: pulse 1.5s infinite; }
-    .status-paused { background: rgba(255,209,102,0.12); border: 1px solid rgba(255,209,102,0.3); color: var(--yellow); }
-    .status-paused .dot { background: var(--yellow); }
-    .status-rest { background: rgba(255,209,102,0.12); border: 1px solid rgba(255,209,102,0.3); color: var(--yellow); }
-    .status-rest .dot { background: var(--yellow); animation: pulse 1.5s infinite; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    /* Host controls */
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 0.6rem;
-      margin-top: 0.5rem;
-    }
-    .controls .btn-primary-action {
-      grid-column: 1 / -1;
-    }
-
-    /* Participants during workout */
-    .participants-mini {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.75rem;
-    }
-    .participant-chip {
-      background: rgba(255,255,255,0.06);
+    /* YouTube */
+    .yt-outer { margin-bottom: 0.875rem; }
+    .yt-container {
+      position: relative; padding-bottom: 56.25%; height: 0;
+      background: #000; border-radius: var(--radius); overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 0.25rem 0.7rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
     }
-    .participant-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-
-    /* Finished screen */
-    .finish-icon { font-size: 4rem; text-align: center; margin-bottom: 1rem; }
-    .finish-title { font-size: 2rem; font-weight: 700; text-align: center; margin-bottom: 0.5rem; }
-    .finish-sub { color: var(--muted); text-align: center; margin-bottom: 1.5rem; }
-
-    /* Error / Loading */
-    #error-screen {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: var(--muted);
-      display: none;
+    #yt-player-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #yt-tap-overlay {
+      position: absolute; inset: 0; background: rgba(15,15,19,0.82);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.75rem; border-radius: var(--radius);
     }
-    #error-screen .error-icon { font-size: 2.5rem; margin-bottom: 1rem; }
-    #loading { text-align: center; padding: 3rem 1rem; color: var(--muted); }
 
-    /* Utilities */
-    .flex { display: flex; }
-    .gap-1 { gap: 0.5rem; }
-    .gap-2 { gap: 1rem; }
-    .mt-1 { margin-top: 0.5rem; }
-    .mt-2 { margin-top: 1rem; }
-    .mb-1 { margin-bottom: 0.5rem; }
-    .mb-2 { margin-bottom: 1rem; }
-    .text-center { text-align: center; }
+    /* Exercise timer */
+    .ex-progress { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .progress-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s; }
+    .progress-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+    .ex-name  { font-size: 1.65rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.4rem; }
+    .ex-desc  { color: var(--muted); font-size: 0.93rem; line-height: 1.6; margin-bottom: 0.75rem; }
+    .demo-link { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent); font-size: 0.88rem; text-decoration: none; }
+    .demo-link:hover { text-decoration: underline; }
+
+    .timer-wrap { text-align: center; padding: 1.25rem 1rem; }
+    .timer-circle { position: relative; width: 150px; height: 150px; margin: 0 auto 0.75rem; }
+    .timer-svg   { transform: rotate(-90deg); }
+    .timer-track { fill: none; stroke: var(--border); stroke-width: 8; }
+    .timer-arc   { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.7s linear, stroke 0.4s; }
+    .timer-arc.rest { stroke: var(--yellow); }
+    .timer-arc.done { stroke: var(--green); }
+    .timer-num {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 2.3rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .timer-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+    .span-full { grid-column: 1 / -1; }
+    .auto-label { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.875rem; font-size: 0.87rem; color: var(--muted); cursor: pointer; }
+    .auto-label input { accent-color: var(--accent); cursor: pointer; }
+
+    .finish-wrap { text-align: center; padding: 2rem 1.5rem; }
+    .finish-icon  { font-size: 3.5rem; margin-bottom: 0.75rem; }
+    .finish-title { font-size: 1.9rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .finish-sub   { color: var(--muted); margin-bottom: 1.25rem; }
+
+    #loading, #error-screen { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+    #error-screen { display: none; }
+    .error-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; }
+    .mb-1 { margin-bottom: 0.5rem; } .mb-2 { margin-bottom: 1rem; }
     .text-muted { color: var(--muted); font-size: 0.88rem; }
-    .font-bold { font-weight: 700; }
-    .w-full { width: 100%; }
+    .flex { display: flex; } .gap-1 { gap: 0.5rem; } .flex-wrap { flex-wrap: wrap; }
+    code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
   </style>
 </head>
 <body>
 
 <div id="loading">Loading session&hellip;</div>
-
 <div id="error-screen">
   <div class="error-icon">&#x26A0;</div>
   <p id="error-msg">Session not found.</p>
   <p class="mt-2"><a href="#" onclick="location.reload()" style="color:var(--accent)">Try again</a></p>
 </div>
 
-<!-- JOIN SCREEN (participants who haven't joined yet) -->
+<!-- JOIN -->
 <div id="screen-join" class="screen">
   <div class="page-header">
-    <div class="h1">Live Workout</div>
-    <div class="workout-name" id="join-workout-name"></div>
+    <div class="label">Live Workout</div>
+    <div class="name" id="join-title"></div>
   </div>
-  <div class="card join-card">
-    <h2>Join the session</h2>
-    <p>Enter your name to join this live workout.</p>
-    <input type="text" id="join-name-input" placeholder="Your name" maxlength="40"
+  <div class="card" style="text-align:center; padding:2rem 1.5rem">
+    <h2 style="font-size:1.3rem; margin-bottom:0.4rem">Join the session</h2>
+    <p class="text-muted mb-2">Enter your name so others know you're here.</p>
+    <input type="text" id="join-input" placeholder="Your name" maxlength="40"
            onkeydown="if(event.key==='Enter') joinSession()">
-    <div id="join-error"></div>
-    <button class="btn btn-primary btn-lg mt-2" onclick="joinSession()">Join Workout</button>
+    <p id="join-error" style="color:var(--red); font-size:0.88rem; margin-top:0.5rem; min-height:1.1em"></p>
+    <button class="btn btn-primary btn-lg mt-2" onclick="joinSession()">Join</button>
   </div>
 </div>
 
-<!-- WAITING ROOM -->
+<!-- WAITING -->
 <div id="screen-waiting" class="screen">
   <div class="page-header">
-    <div style="font-size:0.9rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em">Live Workout</div>
-    <div class="workout-name" id="waiting-workout-name"></div>
+    <div class="label">Live Workout</div>
+    <div class="name" id="waiting-title"></div>
   </div>
   <div class="card">
-    <div class="waiting-badge">Waiting for host to start</div>
-    <p class="text-muted mb-2">The workout will begin shortly. Get ready!</p>
-    <div id="waiting-exercise-preview" class="mb-2"></div>
-    <p class="text-muted" style="font-size:0.82rem; margin-bottom:0.75rem">Participants joined:</p>
-    <ul class="participant-list" id="waiting-participants"></ul>
-    <div id="host-start-area" style="display:none; margin-top:1rem">
-      <button class="btn btn-green btn-lg" onclick="hostControl('start')">&#x25B6; Start Workout</button>
+    <span class="badge badge-waiting mb-2"><span class="dot"></span>Waiting to start</span>
+    <p class="text-muted mt-1 mb-2">The host will start shortly. Get ready!</p>
+    <div id="waiting-meta" class="mb-2 text-muted"></div>
+    <p style="font-size:0.82rem; color:var(--muted); margin-bottom:0.5rem">Who's here:</p>
+    <ul class="waiting-list" id="waiting-list"></ul>
+    <div id="host-start-wrap" style="display:none; margin-top:1rem">
+      <button class="btn btn-green btn-lg" onclick="hostControl('start')">&#x25B6;&nbsp; Start</button>
     </div>
   </div>
 </div>
 
-<!-- WORKOUT SCREEN -->
+<!-- WORKOUT -->
 <div id="screen-workout" class="screen">
   <div class="page-header">
-    <div style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em" id="workout-screen-title">Live Workout</div>
+    <div class="label" id="workout-label">Live Workout</div>
   </div>
 
-  <div class="card" style="padding:1rem 1.25rem 1.25rem">
-    <div class="exercise-progress">
-      <div class="progress-track"><div class="progress-fill" id="ex-progress-fill"></div></div>
-      <div class="progress-label" id="ex-progress-label"></div>
+  <!-- YouTube player -->
+  <div id="yt-outer" class="yt-outer" style="display:none">
+    <div class="yt-container">
+      <div id="yt-player-inner"></div>
+      <div id="yt-tap-overlay" style="display:none">
+        <p class="text-muted" style="font-size:0.9rem">Tap to join the live video</p>
+        <button class="btn btn-primary" onclick="tapToPlay()">&#x25B6;&nbsp; Tap to Play</button>
+      </div>
     </div>
-    <div id="status-badge-wrap"></div>
-    <div class="exercise-name" id="ex-name"></div>
-    <div class="exercise-desc" id="ex-desc"></div>
-    <a id="ex-video" class="video-link" href="#" target="_blank" rel="noopener" style="display:none">
-      &#x25B6; Watch video demo
+  </div>
+
+  <!-- Video status row -->
+  <div id="yt-status" class="card" style="display:none">
+    <div id="yt-badge-wrap" class="mb-1"></div>
+    <p id="yt-info" class="text-muted"></p>
+  </div>
+
+  <!-- Exercise info -->
+  <div id="exercise-info" class="card" style="display:none">
+    <div class="ex-progress">
+      <div class="progress-track"><div class="progress-fill" id="ex-fill"></div></div>
+      <div class="progress-label" id="ex-label"></div>
+    </div>
+    <div id="ex-badge-wrap" class="mb-1"></div>
+    <div class="ex-name" id="ex-name"></div>
+    <div class="ex-desc" id="ex-desc"></div>
+    <a id="ex-video-link" class="demo-link" href="#" target="_blank" rel="noopener" style="display:none">
+      &#x25B6;&nbsp; Watch demo
     </a>
   </div>
 
-  <div class="card timer-wrap">
+  <!-- Exercise timer -->
+  <div id="exercise-timer" class="card timer-wrap" style="display:none">
     <div class="timer-circle">
-      <svg class="timer-svg" width="160" height="160" viewBox="0 0 160 160">
-        <circle class="timer-track" cx="80" cy="80" r="68"/>
-        <circle class="timer-fill" id="timer-arc" cx="80" cy="80" r="68"/>
+      <svg class="timer-svg" width="150" height="150" viewBox="0 0 150 150">
+        <circle class="timer-track" cx="75" cy="75" r="64"/>
+        <circle class="timer-arc" id="timer-arc" cx="75" cy="75" r="64"/>
       </svg>
-      <div class="timer-number" id="timer-number">--</div>
+      <div class="timer-num" id="timer-num">--</div>
     </div>
     <div class="timer-label" id="timer-label">seconds remaining</div>
   </div>
 
   <!-- Host controls -->
   <div id="host-controls" class="card" style="display:none">
-    <p class="text-muted mb-2" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em">Host Controls</p>
-    <div class="controls">
-      <button class="btn btn-outline btn-sm" onclick="hostControl('prev')" id="ctrl-prev">&larr; Prev</button>
-      <button class="btn btn-outline btn-sm" id="ctrl-pause-resume" onclick="togglePauseResume()">Pause</button>
-      <button class="btn btn-outline btn-sm" onclick="hostControl('next')" id="ctrl-next">Next &rarr;</button>
-      <button class="btn btn-danger btn-sm" onclick="hostFinish()" style="grid-column:1/-1; margin-top:0.25rem">
-        Stop Workout
-      </button>
+    <p style="font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.75rem">Host Controls</p>
+
+    <div id="ctrl-exercise" style="display:none">
+      <div class="controls-grid">
+        <button class="btn btn-outline btn-sm" id="ctrl-prev" onclick="hostControl('prev')">&larr; Prev</button>
+        <button class="btn btn-outline btn-sm" id="ctrl-pause" onclick="togglePause()">Pause</button>
+        <button class="btn btn-outline btn-sm" id="ctrl-next" onclick="hostControl('next')">Next &rarr;</button>
+        <button class="btn btn-danger btn-sm span-full" onclick="hostFinish()" style="margin-top:0.25rem">Stop Workout</button>
+      </div>
+      <label class="auto-label">
+        <input type="checkbox" id="auto-advance">
+        Auto-advance when timer ends
+      </label>
     </div>
-    <label style="display:flex; align-items:center; gap:0.5rem; margin-top:1rem; cursor:pointer; font-size:0.88rem; color:var(--muted)">
-      <input type="checkbox" id="auto-advance" style="width:auto; accent-color:var(--accent)">
-      Auto-advance when timer ends
-    </label>
+
+    <div id="ctrl-video" style="display:none">
+      <div class="flex gap-1 flex-wrap">
+        <button class="btn btn-outline btn-sm" id="ctrl-vid-pause" onclick="togglePause()">Pause for everyone</button>
+        <button class="btn btn-danger btn-sm" onclick="hostFinish()">End Session</button>
+      </div>
+      <p class="text-muted mt-2" style="font-size:0.82rem">
+        To swap the video, use <code>/setvideo [YouTube URL]</code> in Slack.
+      </p>
+    </div>
   </div>
 
   <!-- Participants -->
   <div class="card">
     <p class="text-muted mb-1" style="font-size:0.82rem">Working out with you:</p>
-    <div class="participants-mini" id="workout-participants"></div>
+    <div class="chips" id="workout-chips"></div>
   </div>
 </div>
 
-<!-- FINISHED SCREEN -->
+<!-- FINISHED -->
 <div id="screen-finished" class="screen">
-  <div class="card" style="text-align:center; padding:2.5rem 1.5rem">
+  <div class="card finish-wrap">
     <div class="finish-icon">&#x1F3C6;</div>
     <div class="finish-title">Workout Complete!</div>
-    <div class="finish-sub" id="finish-workout-name"></div>
-    <p class="text-muted mb-2">Great work! You crushed it.</p>
-    <div class="participants-mini" id="finish-participants" style="justify-content:center; margin-bottom:1.5rem"></div>
-    <p class="text-muted" style="font-size:0.85rem">Head back to Slack to log your activity.</p>
+    <div class="finish-sub" id="finish-sub"></div>
+    <p class="text-muted mb-2">Great work. Head back to Slack to log your activity.</p>
+    <div class="chips" id="finish-chips" style="justify-content:center"></div>
   </div>
 </div>
 
 <script>
 // ============================================================
-//  INIT
+//  STATE
 // ============================================================
-const params      = new URLSearchParams(location.search);
-const SESSION_ID  = params.get('id');
-const HOST_TOKEN  = params.get('host_token') || null;
-const IS_HOST     = !!HOST_TOKEN;
+const params     = new URLSearchParams(location.search);
+const SESSION_ID = params.get('id');
+const HOST_TOKEN = params.get('host_token') || null;
+const IS_HOST    = !!HOST_TOKEN;
 
-// For participants: track if they have joined
-let myName = sessionStorage.getItem('workout_name_' + SESSION_ID) || null;
+let myName     = sessionStorage.getItem('wname_' + SESSION_ID) || null;
+let serverData = null;
+let pollTimer  = null;
+let tickTimer  = null;
+let autoAdv    = false;
 
-let state        = null;   // last fetched session data
-let pollTimer    = null;
-let tickTimer    = null;
-let autoAdvanced = false;  // prevent double auto-advance
+// YouTube
+let ytPlayer       = null;
+let ytReady        = false;
+let pendingVideoId = null;
+let currentVideoId = null;
 
-const CIRCUMFERENCE = 2 * Math.PI * 68;  // r=68
+const CIRC = 2 * Math.PI * 64;
 
 // ============================================================
-//  BOOTSTRAP
+//  BOOT
 // ============================================================
 if (!SESSION_ID) {
   showError('No session ID in URL.');
 } else {
-  fetchAndRender();
+  poll();
 }
 
 // ============================================================
 //  FETCH
 // ============================================================
-async function fetchAndRender() {
+async function poll() {
+  clearTimeout(pollTimer);
   try {
-    const res  = await fetch('/api/workout/session/' + SESSION_ID);
-    if (!res.ok) { showError('Session not found (404).'); return; }
-    const data = await res.json();
-    state = data;
-    render(data);
+    const res = await fetch('/api/workout/session/' + SESSION_ID);
+    if (!res.ok) { showError('Session not found.'); return; }
+    serverData = await res.json();
+    render(serverData);
   } catch(e) {
-    showError('Could not reach server: ' + e.message);
+    showError('Could not reach server.');
   }
 }
 
 function schedulePoll(ms) {
   clearTimeout(pollTimer);
-  pollTimer = setTimeout(fetchAndRender, ms);
+  pollTimer = setTimeout(poll, ms);
 }
 
 // ============================================================
@@ -462,153 +355,183 @@ function render(data) {
   const { session, template, participants } = data;
   document.getElementById('loading').style.display = 'none';
 
-  if (session.status === 'finished') {
-    showFinished(template, participants); return;
-  }
-  if (session.status === 'waiting') {
-    showWaiting(session, template, participants); return;
-  }
-  // active or paused
-  if (!IS_HOST && !myName) {
-    showJoin(template); return;
-  }
+  if (session.status === 'finished') { showFinished(session, template, participants); return; }
+  if (session.status === 'waiting')  { showWaiting(session, template, participants);  return; }
+
+  if (!IS_HOST && !myName) { showJoin(template); return; }
+
   showWorkout(session, template, participants);
 }
 
 // ============================================================
-//  JOIN SCREEN
+//  JOIN
 // ============================================================
 function showJoin(template) {
   activateScreen('join');
-  document.getElementById('join-workout-name').textContent = template.name;
+  document.getElementById('join-title').textContent = template ? template.name : 'Video Workout';
 }
 
 async function joinSession() {
-  const input = document.getElementById('join-name-input');
-  const name  = input.value.trim();
+  const name  = document.getElementById('join-input').value.trim();
   const errEl = document.getElementById('join-error');
   if (!name) { errEl.textContent = 'Please enter your name.'; return; }
-
   try {
     const res = await fetch('/api/workout/session/' + SESSION_ID + '/join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) { errEl.textContent = 'Could not join. Try again.'; return; }
+    if (!res.ok) { errEl.textContent = 'Could not join — try again.'; return; }
     myName = name;
-    sessionStorage.setItem('workout_name_' + SESSION_ID, name);
+    sessionStorage.setItem('wname_' + SESSION_ID, name);
     errEl.textContent = '';
-    fetchAndRender();
-  } catch(e) {
-    errEl.textContent = 'Network error. Try again.';
-  }
+    poll();
+  } catch(e) { errEl.textContent = 'Network error.'; }
 }
 
 // ============================================================
-//  WAITING ROOM
+//  WAITING
 // ============================================================
 function showWaiting(session, template, participants) {
   activateScreen('waiting');
-  document.getElementById('waiting-workout-name').textContent = template.name;
+  const isVideo = !!session.youtube_url;
+  document.getElementById('waiting-title').textContent = template ? template.name : 'Video Workout';
 
-  // Exercise list preview
-  const exercises = template.exercises || [];
-  const previewEl = document.getElementById('waiting-exercise-preview');
-  if (exercises.length) {
-    const total_s = exercises.reduce((s, e) => s + (e.duration_seconds||0) + (e.rest_seconds||0), 0);
-    previewEl.innerHTML =
-      '<p style="color:var(--muted); font-size:0.88rem">' +
-      exercises.length + ' exercises &nbsp;&bull;&nbsp; ~' + Math.ceil(total_s / 60) + ' min</p>';
+  const metaEl = document.getElementById('waiting-meta');
+  if (isVideo && session.youtube_url) {
+    const vid = extractYtId(session.youtube_url);
+    metaEl.innerHTML = vid
+      ? '<a href="' + esc(session.youtube_url) + '" target="_blank" rel="noopener" style="color:var(--accent); font-size:0.88rem">&#x25B6; Preview video on YouTube</a>'
+      : '';
+  } else if (template) {
+    const exs   = template.exercises || [];
+    const total = exs.reduce((s, e) => s + (e.duration_seconds||0) + (e.rest_seconds||0), 0);
+    metaEl.textContent = exs.length + ' exercises  \u2022  ~' + Math.ceil(total / 60) + ' min';
+  } else {
+    metaEl.textContent = '';
   }
 
-  // Participant list
-  const ul = document.getElementById('waiting-participants');
+  const ul = document.getElementById('waiting-list');
   ul.innerHTML = '';
-  if (participants.length === 0) {
-    ul.innerHTML = '<li style="color:var(--muted); font-size:0.88rem">No one yet&hellip;</li>';
+  if (!participants.length) {
+    ul.innerHTML = '<li style="color:var(--muted)">No one yet\u2026</li>';
   } else {
     participants.forEach(p => {
       const li = document.createElement('li');
-      li.innerHTML = '<span class="participant-dot"></span>' + esc(p.display_name);
+      li.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;display:inline-block"></span>' + esc(p.display_name);
       ul.appendChild(li);
     });
   }
 
-  // Host start button
-  document.getElementById('host-start-area').style.display = IS_HOST ? 'block' : 'none';
-
-  schedulePoll(2000);
+  document.getElementById('host-start-wrap').style.display = IS_HOST ? 'block' : 'none';
+  schedulePoll(2500);
 }
 
 // ============================================================
-//  WORKOUT SCREEN
+//  WORKOUT
 // ============================================================
 function showWorkout(session, template, participants) {
   activateScreen('workout');
   clearTimeout(tickTimer);
-  autoAdvanced = false;
+  autoAdv = false;
 
-  const exercises = template.exercises || [];
-  const idx       = session.current_exercise_index || 0;
-  const exercise  = exercises[idx] || {};
-  const total     = exercises.length;
+  const isVideo = !!session.youtube_url;
+  document.getElementById('workout-label').textContent = template ? template.name : 'Live Video Workout';
 
-  // Header
-  document.getElementById('workout-screen-title').textContent = template.name;
-
-  // Progress bar
-  document.getElementById('ex-progress-fill').style.width = ((idx + 1) / total * 100) + '%';
-  document.getElementById('ex-progress-label').textContent = (idx + 1) + ' / ' + total;
-
-  // Exercise info
-  document.getElementById('ex-name').textContent = exercise.name || '';
-  document.getElementById('ex-desc').textContent = exercise.description || '';
-  const videoEl = document.getElementById('ex-video');
-  if (exercise.video_url) {
-    videoEl.href = exercise.video_url;
-    videoEl.style.display = 'inline-flex';
-  } else {
-    videoEl.style.display = 'none';
-  }
+  // Show correct sections
+  show('yt-outer',       isVideo);
+  show('yt-status',      isVideo);
+  show('exercise-info',  !isVideo);
+  show('exercise-timer', !isVideo);
 
   // Participants
-  const pWrap = document.getElementById('workout-participants');
-  pWrap.innerHTML = '';
-  if (participants.length === 0) {
-    pWrap.innerHTML = '<span style="color:var(--muted); font-size:0.85rem">Just you!</span>';
+  const chips = document.getElementById('workout-chips');
+  chips.innerHTML = '';
+  if (!participants.length) {
+    chips.innerHTML = '<span class="text-muted">Just you!</span>';
   } else {
-    participants.forEach(p => {
-      const chip = document.createElement('div');
-      chip.className = 'participant-chip';
-      chip.innerHTML = '<span class="dot"></span>' + esc(p.display_name);
-      pWrap.appendChild(chip);
-    });
+    participants.forEach(p => addChip(chips, p.display_name));
   }
 
   // Host controls
   const ctrlEl = document.getElementById('host-controls');
   ctrlEl.style.display = IS_HOST ? 'block' : 'none';
   if (IS_HOST) {
-    document.getElementById('ctrl-prev').disabled = idx === 0;
-    document.getElementById('ctrl-next').disabled = idx >= total - 1 && session.status !== 'active';
-    const pauseBtn = document.getElementById('ctrl-pause-resume');
-    pauseBtn.textContent = session.status === 'paused' ? 'Resume' : 'Pause';
+    show('ctrl-exercise', !isVideo);
+    show('ctrl-video',     isVideo);
+    if (!isVideo && template) {
+      const idx = session.current_exercise_index || 0;
+      const len = (template.exercises || []).length;
+      document.getElementById('ctrl-prev').disabled  = idx === 0;
+      document.getElementById('ctrl-next').disabled  = idx >= len - 1;
+      document.getElementById('ctrl-pause').textContent =
+        session.status === 'paused' ? 'Resume' : 'Pause';
+    }
+    if (isVideo) {
+      document.getElementById('ctrl-vid-pause').textContent =
+        session.status === 'paused' ? 'Resume for everyone' : 'Pause for everyone';
+    }
   }
 
-  // Start tick loop
-  tick(session, exercise, idx, total);
+  if (isVideo) {
+    runVideoMode(session);
+  } else {
+    runExerciseMode(session, template);
+  }
 }
 
-function tick(session, exercise, idx, total) {
-  const durSec  = exercise.duration_seconds || 0;
-  const restSec = exercise.rest_seconds || 0;
-  const arc     = document.getElementById('timer-arc');
-  const numEl   = document.getElementById('timer-number');
-  const lblEl   = document.getElementById('timer-label');
-  const badgeWrap = document.getElementById('status-badge-wrap');
+// ============================================================
+//  VIDEO MODE
+// ============================================================
+function runVideoMode(session) {
+  const badgeEl = document.getElementById('yt-badge-wrap');
+  const infoEl  = document.getElementById('yt-info');
 
-  const update = () => {
+  if (session.status === 'paused') {
+    badgeEl.innerHTML = mkBadge('paused', 'Paused');
+    infoEl.textContent = 'Host has paused the video.';
+  } else {
+    badgeEl.innerHTML = mkBadge('live', 'Live');
+    infoEl.textContent = 'Video is playing \u2014 synced for everyone.';
+  }
+
+  const vid = extractYtId(session.youtube_url || '');
+  if (vid) {
+    if (!ytPlayer) {
+      loadYouTubeAPI(vid);
+    } else {
+      syncVideo(session);
+    }
+  }
+
+  schedulePoll(2000);
+}
+
+// ============================================================
+//  EXERCISE MODE
+// ============================================================
+function runExerciseMode(session, template) {
+  const exercises = (template && template.exercises) || [];
+  const idx       = session.current_exercise_index || 0;
+  const exercise  = exercises[idx] || {};
+  const total     = exercises.length;
+  const durSec    = exercise.duration_seconds || 0;
+  const restSec   = exercise.rest_seconds || 0;
+
+  document.getElementById('ex-fill').style.width   = ((idx + 1) / total * 100) + '%';
+  document.getElementById('ex-label').textContent  = (idx + 1) + ' / ' + total;
+  document.getElementById('ex-name').textContent   = exercise.name || '';
+  document.getElementById('ex-desc').textContent   = exercise.description || '';
+  const vl = document.getElementById('ex-video-link');
+  vl.style.display = exercise.video_url ? 'inline-flex' : 'none';
+  if (exercise.video_url) vl.href = exercise.video_url;
+
+  const arc   = document.getElementById('timer-arc');
+  const numEl = document.getElementById('timer-num');
+  const lblEl = document.getElementById('timer-label');
+  const bdgEl = document.getElementById('ex-badge-wrap');
+
+  const doTick = () => {
     const now = Date.now() / 1000;
     let elapsed = 0;
 
@@ -619,88 +542,57 @@ function tick(session, exercise, idx, total) {
     }
 
     if (session.status === 'paused') {
-      // Paused — show remaining at pause point
-      const remaining = Math.max(0, durSec - elapsed);
-      numEl.textContent = fmt(remaining);
+      const rem = Math.max(0, durSec - elapsed);
+      numEl.textContent = fmt(rem);
       lblEl.textContent = 'paused';
-      setArc(arc, remaining, durSec, 'paused');
-      badgeWrap.innerHTML = badge('paused', 'Paused');
-      return; // don't reschedule
+      setArc(arc, rem, durSec, 'paused');
+      bdgEl.innerHTML   = mkBadge('paused', 'Paused');
+      return;
     }
 
     if (elapsed <= durSec) {
-      // Exercise phase
-      const remaining = Math.max(0, durSec - elapsed);
-      numEl.textContent = fmt(remaining);
+      const rem = Math.max(0, durSec - elapsed);
+      numEl.textContent = fmt(rem);
       lblEl.textContent = 'seconds remaining';
-      setArc(arc, remaining, durSec, 'active');
-      badgeWrap.innerHTML = badge('active', 'Active');
-
-      // Auto-advance
-      if (remaining === 0 && IS_HOST && !autoAdvanced) {
-        const autoEl = document.getElementById('auto-advance');
-        if (autoEl && autoEl.checked) {
-          autoAdvanced = true;
-          if (idx < total - 1) {
-            hostControl('next');
-          } else {
-            hostControl('finish');
-          }
-          return;
-        }
+      setArc(arc, rem, durSec, 'active');
+      bdgEl.innerHTML   = mkBadge('live', 'Active');
+      if (rem === 0 && IS_HOST && !autoAdv && autoAdvEnabled()) {
+        autoAdv = true;
+        hostControl(idx < total - 1 ? 'next' : 'finish');
+        return;
       }
     } else {
-      // Rest phase
       const restElapsed = elapsed - durSec;
-      const remaining   = Math.max(0, restSec - restElapsed);
-      numEl.textContent = fmt(remaining);
-      lblEl.textContent = restSec > 0 ? 'rest time' : 'done!';
-      setArc(arc, remaining, restSec || 1, remaining === 0 ? 'done' : 'rest');
-      badgeWrap.innerHTML = restSec > 0 && remaining > 0
-        ? badge('rest', 'Rest')
-        : badge('active', 'Ready for next');
-
-      // Auto-advance after rest
-      if (remaining === 0 && IS_HOST && !autoAdvanced) {
-        const autoEl = document.getElementById('auto-advance');
-        if (autoEl && autoEl.checked) {
-          autoAdvanced = true;
-          if (idx < total - 1) {
-            hostControl('next');
-          } else {
-            hostControl('finish');
-          }
-          return;
-        }
+      const rem         = Math.max(0, restSec - restElapsed);
+      numEl.textContent = fmt(rem);
+      lblEl.textContent = restSec > 0 ? 'rest' : 'done!';
+      setArc(arc, rem, restSec || 1, rem === 0 ? 'done' : 'rest');
+      bdgEl.innerHTML   = (restSec > 0 && rem > 0) ? mkBadge('paused', 'Rest') : mkBadge('live', 'Ready');
+      if (rem === 0 && IS_HOST && !autoAdv && autoAdvEnabled()) {
+        autoAdv = true;
+        hostControl(idx < total - 1 ? 'next' : 'finish');
+        return;
       }
     }
 
-    tickTimer = setTimeout(update, 500);
+    tickTimer = setTimeout(doTick, 500);
   };
 
-  update();
-
-  // Poll server less frequently while active
-  schedulePoll(session.status === 'paused' ? 3000 : 4000);
+  doTick();
+  schedulePoll(session.status === 'paused' ? 3500 : 4000);
 }
 
 // ============================================================
-//  FINISHED SCREEN
+//  FINISHED
 // ============================================================
-function showFinished(template, participants) {
+function showFinished(session, template, participants) {
   activateScreen('finished');
   clearTimeout(tickTimer);
   clearTimeout(pollTimer);
-
-  document.getElementById('finish-workout-name').textContent = template.name;
-  const wrap = document.getElementById('finish-participants');
+  document.getElementById('finish-sub').textContent = template ? template.name : 'Video Workout';
+  const wrap = document.getElementById('finish-chips');
   wrap.innerHTML = '';
-  participants.forEach(p => {
-    const chip = document.createElement('div');
-    chip.className = 'participant-chip';
-    chip.innerHTML = '<span class="dot"></span>' + esc(p.display_name);
-    wrap.appendChild(chip);
-  });
+  participants.forEach(p => addChip(wrap, p.display_name));
 }
 
 // ============================================================
@@ -716,21 +608,125 @@ async function hostControl(action) {
     if (!res.ok) { console.error('Control failed:', action); return; }
     clearTimeout(pollTimer);
     clearTimeout(tickTimer);
-    autoAdvanced = false;
-    await fetchAndRender();
-  } catch(e) {
-    console.error('Control error:', e);
-  }
+    autoAdv = false;
+    await poll();
+  } catch(e) { console.error('Control error:', e); }
 }
 
-function togglePauseResume() {
-  if (!state) return;
-  const status = state.session.status;
-  hostControl(status === 'paused' ? 'resume' : 'pause');
+function togglePause() {
+  if (!serverData) return;
+  hostControl(serverData.session.status === 'paused' ? 'resume' : 'pause');
 }
 
 function hostFinish() {
-  if (confirm('End the workout for everyone?')) hostControl('finish');
+  if (confirm('End the session for everyone?')) hostControl('finish');
+}
+
+// ============================================================
+//  YOUTUBE API
+// ============================================================
+function loadYouTubeAPI(videoId) {
+  pendingVideoId = videoId;
+  if (window.YT && window.YT.Player) { createYTPlayer(videoId); return; }
+  if (!document.getElementById('yt-api-script')) {
+    const tag = document.createElement('script');
+    tag.id  = 'yt-api-script';
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  }
+}
+
+window.onYouTubeIframeAPIReady = function() {
+  if (pendingVideoId) createYTPlayer(pendingVideoId);
+};
+
+function createYTPlayer(videoId) {
+  if (ytPlayer && typeof ytPlayer.getVideoData === 'function') {
+    if (ytPlayer.getVideoData().video_id !== videoId) {
+      ytPlayer.cueVideoById(videoId);
+      currentVideoId = videoId;
+    }
+    ytReady = true;
+    if (serverData) syncVideo(serverData.session);
+    return;
+  }
+  ytPlayer = new YT.Player('yt-player-inner', {
+    videoId: videoId,
+    width: '100%', height: '100%',
+    playerVars: { autoplay: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        currentVideoId = videoId;
+        if (serverData) syncVideo(serverData.session);
+      },
+      onError: (e) => console.warn('YT error', e.data),
+    },
+  });
+}
+
+function syncVideo(session) {
+  if (!ytPlayer || !ytReady) return;
+  try {
+    const vid = extractYtId(session.youtube_url || '');
+    if (vid && vid !== currentVideoId) {
+      ytPlayer.cueVideoById(vid);
+      currentVideoId = vid;
+    }
+
+    const now = Date.now() / 1000;
+
+    if (session.status === 'waiting') {
+      if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+        ytPlayer.pauseVideo();
+        ytPlayer.seekTo(0, true);
+      }
+      return;
+    }
+
+    if (session.status === 'paused') {
+      const target = session.paused_elapsed || 0;
+      if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+        ytPlayer.pauseVideo();
+        ytPlayer.seekTo(target, true);
+      }
+      return;
+    }
+
+    if (session.status === 'active' && session.exercise_start_time) {
+      const target  = (now - session.exercise_start_time) + (session.paused_elapsed || 0);
+      const current = ytPlayer.getCurrentTime();
+      const state   = ytPlayer.getPlayerState();
+      const notPlaying = state !== YT.PlayerState.PLAYING && state !== YT.PlayerState.BUFFERING;
+
+      if (notPlaying) {
+        ytPlayer.seekTo(target, true);
+        ytPlayer.playVideo();
+        // Show tap overlay if autoplay is blocked (common on mobile)
+        setTimeout(() => {
+          try {
+            const s = ytPlayer.getPlayerState();
+            if (s !== YT.PlayerState.PLAYING && s !== YT.PlayerState.BUFFERING) {
+              document.getElementById('yt-tap-overlay').style.display = 'flex';
+            }
+          } catch(e) {}
+        }, 1500);
+      } else if (Math.abs(current - target) > 4) {
+        ytPlayer.seekTo(target, true);
+      }
+    }
+  } catch(e) { console.warn('syncVideo error', e); }
+}
+
+function tapToPlay() {
+  if (!ytPlayer || !serverData) return;
+  const s = serverData.session;
+  if (s.status === 'active' && s.exercise_start_time) {
+    const target = (Date.now() / 1000 - s.exercise_start_time) + (s.paused_elapsed || 0);
+    ytPlayer.seekTo(target, true);
+    ytPlayer.playVideo();
+  }
+  document.getElementById('yt-tap-overlay').style.display = 'none';
 }
 
 // ============================================================
@@ -742,37 +738,49 @@ function activateScreen(name) {
   if (el) el.classList.add('active');
 }
 
+function show(id, visible) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = visible ? 'block' : 'none';
+}
+
 function showError(msg) {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('error-screen').style.display = 'block';
   document.getElementById('error-msg').textContent = msg;
 }
 
+function addChip(container, name) {
+  const c = document.createElement('div');
+  c.className = 'chip';
+  c.innerHTML = '<span class="dot"></span>' + esc(name);
+  container.appendChild(c);
+}
+
+function extractYtId(url) {
+  const m = url.match(/(?:youtube\.com\/watch\?[^\s]*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function autoAdvEnabled() {
+  const el = document.getElementById('auto-advance');
+  return el && el.checked;
+}
+
 function fmt(seconds) {
   const s = Math.ceil(seconds);
-  if (s >= 60) {
-    const m = Math.floor(s / 60);
-    const rem = s % 60;
-    return m + ':' + String(rem).padStart(2, '0');
-  }
+  if (s >= 60) return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   return String(s);
 }
 
 function setArc(arcEl, remaining, total, phase) {
-  const ratio  = total > 0 ? Math.max(0, Math.min(1, remaining / total)) : 0;
-  const offset = CIRCUMFERENCE * (1 - ratio);
-  arcEl.style.strokeDasharray  = CIRCUMFERENCE;
-  arcEl.style.strokeDashoffset = offset;
-  arcEl.className = 'timer-fill' + (phase === 'rest' ? ' rest' : phase === 'done' ? ' done' : '');
+  arcEl.style.strokeDasharray  = CIRC;
+  arcEl.style.strokeDashoffset = CIRC * (1 - Math.max(0, Math.min(1, total > 0 ? remaining / total : 0)));
+  arcEl.className = 'timer-arc' + (phase === 'rest' ? ' rest' : phase === 'done' ? ' done' : '');
 }
 
-function badge(type, label) {
-  const cls = {
-    active: 'status-active',
-    paused: 'status-paused',
-    rest:   'status-rest',
-  }[type] || 'status-active';
-  return '<span class="status-badge ' + cls + '"><span class="dot"></span>' + label + '</span>';
+function mkBadge(type, label) {
+  const cls = { live: 'badge-live', paused: 'badge-paused', waiting: 'badge-waiting' }[type] || 'badge-live';
+  return '<span class="badge ' + cls + '"><span class="dot"></span>' + label + '</span>';
 }
 
 function esc(s) {

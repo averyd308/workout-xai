@@ -10,8 +10,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from flask import Flask, request
 from slack_bolt.adapter.flask import SlackRequestHandler
 
+import re
+import time as _time
+
 import database
 from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input
+
+_YOUTUBE_RE = re.compile(
+    r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?[^\s]*v=|youtu\.be/)([a-zA-Z0-9_-]{11})'
+)
+
+def _extract_youtube_id(text):
+    m = _YOUTUBE_RE.search(text)
+    return m.group(1) if m else None
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -374,63 +385,133 @@ def handle_start_workout(ack, command, respond):
     if not text:
         templates = database.get_workout_templates()
         names = ", ".join(f"`{t['name']}`" for t in templates) if templates else "none"
-        respond(f"Usage: `/startlive [template name]`\nAvailable: {names}")
-        return
-
-    template = database.get_workout_template_by_name(text)
-    if not template:
-        # Try partial match
-        all_templates = database.get_workout_templates()
-        template = next((t for t in all_templates if text.lower() in t["name"].lower()), None)
-    if not template:
-        respond(f":x: No template found matching \"{text}\". Use `/workouts` to see options.")
+        respond(
+            f"Usage:\n"
+            f"• `/startlive [template name]` — guided exercise session\n"
+            f"• `/startlive [youtube URL]` — sync a YouTube video for the group\n"
+            f"Available templates: {names}"
+        )
         return
 
     user_id = command["user_id"]
     session_id = secrets.token_urlsafe(8)
     host_token = secrets.token_urlsafe(16)
-    database.create_workout_session(session_id, template["id"], user_id, host_token, CHANNEL_ID)
-
     base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
     join_url = f"{base_url}/workout?id={session_id}"
     host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
 
-    exercises = template.get("exercises", [])
-    total_s = sum(e.get("duration_seconds", 0) + e.get("rest_seconds", 0) for e in exercises)
-    mins = total_s // 60
+    video_id = _extract_youtube_id(text)
 
-    bolt_app.client.chat_postMessage(
-        channel=CHANNEL_ID,
-        text=f":muscle: <@{user_id}> started a {template['name']} group workout! Join here: {join_url}",
-        blocks=[
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": (
-                        f":muscle: *<@{user_id}> is starting a group workout!*\n"
-                        f"*{template['name']}*  •  {len(exercises)} exercises  •  ~{mins} min\n\n"
-                        f"<{join_url}|:arrow_right:  Click here to join the live session>"
-                    ),
-                },
-            }
-        ],
-    )
+    if video_id:
+        # ── YouTube video session ──────────────────────────────────────────
+        youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+        database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=youtube_url)
+
+        bolt_app.client.chat_postMessage(
+            channel=CHANNEL_ID,
+            text=f":tv: <@{user_id}> started a group video workout! Join here: {join_url}",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": (
+                            f":tv: *<@{user_id}> is starting a group video workout!*\n"
+                            f"Everyone will watch and follow along in sync.\n\n"
+                            f"<{join_url}|:arrow_right:  Click here to join the live session>"
+                        ),
+                    },
+                }
+            ],
+        )
+        dm_text = (
+            f":crown: You started a group video session!\n"
+            f"Use this private link to control the video:\n{host_url}\n\n"
+            f"_Keep this link private — it gives you host controls._\n\n"
+            f"To swap the video later, use `/setvideo [new YouTube URL]`."
+        )
+    else:
+        # ── Exercise template session ──────────────────────────────────────
+        template = database.get_workout_template_by_name(text)
+        if not template:
+            all_templates = database.get_workout_templates()
+            template = next((t for t in all_templates if text.lower() in t["name"].lower()), None)
+        if not template:
+            respond(f":x: No template found matching \"{text}\". Use `/liveworkouts` to see options.")
+            return
+
+        database.create_workout_session(session_id, template["id"], user_id, host_token, CHANNEL_ID)
+
+        exercises = template.get("exercises", [])
+        total_s = sum(e.get("duration_seconds", 0) + e.get("rest_seconds", 0) for e in exercises)
+        mins = total_s // 60
+
+        bolt_app.client.chat_postMessage(
+            channel=CHANNEL_ID,
+            text=f":muscle: <@{user_id}> started a {template['name']} group workout! Join here: {join_url}",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": (
+                            f":muscle: *<@{user_id}> is starting a group workout!*\n"
+                            f"*{template['name']}*  •  {len(exercises)} exercises  •  ~{mins} min\n\n"
+                            f"<{join_url}|:arrow_right:  Click here to join the live session>"
+                        ),
+                    },
+                }
+            ],
+        )
+        dm_text = (
+            f":crown: You started *{template['name']}*!\n"
+            f"Use this private link to control the workout:\n{host_url}\n\n"
+            f"_Keep this link private — it gives you host controls._"
+        )
 
     try:
         dm = bolt_app.client.conversations_open(users=user_id)
-        bolt_app.client.chat_postMessage(
-            channel=dm["channel"]["id"],
-            text=(
-                f":crown: You started *{template['name']}*!\n"
-                f"Use this private link to control the workout:\n{host_url}\n\n"
-                f"_Keep this link private — it gives you host controls._"
-            ),
-        )
+        bolt_app.client.chat_postMessage(channel=dm["channel"]["id"], text=dm_text)
     except Exception as e:
-        logging.error(f"/startworkout DM error: {e}")
+        logging.error(f"/startlive DM error: {e}")
 
-    respond(f":white_check_mark: Session started! Join link posted to the channel.")
+    respond(":white_check_mark: Session started! Join link posted to the channel.")
+
+
+@bolt_app.command("/setvideo")
+def handle_set_video(ack, command, respond):
+    ack()
+    try:
+        text = command["text"].strip()
+        if not text:
+            respond(
+                "Usage: `/setvideo https://youtube.com/watch?v=...`\n"
+                "Changes the video for the current active session and resets playback to the start."
+            )
+            return
+
+        video_id = _extract_youtube_id(text)
+        if not video_id:
+            respond(":x: Please provide a valid YouTube URL (youtube.com/watch?v=... or youtu.be/...)")
+            return
+
+        session = database.get_active_session_for_channel(CHANNEL_ID)
+        if not session:
+            respond(":x: No active session found. Start one with `/startlive [YouTube URL]`.")
+            return
+
+        youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+        database.update_workout_session(session["id"], {
+            "youtube_url": youtube_url,
+            "status": "waiting",
+            "exercise_start_time": None,
+            "paused_elapsed": 0,
+        })
+
+        respond(f":white_check_mark: Video updated! Press *Start Video* in the session to begin.\n{youtube_url}")
+    except Exception as e:
+        logging.error(f"/setvideo error: {e}")
+        respond(f"Error: {e}")
 
 
 # ── Strava Commands ────────────────────────────────────────────────────────────

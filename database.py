@@ -308,17 +308,35 @@ def seed_workout_templates():
             }).execute()
 
 
-def create_workout_session(session_id, template_id, host_slack_user_id, host_token, channel_id):
-    get_client().table("workout_sessions").insert({
+def create_workout_session(session_id, template_id, host_slack_user_id, host_token, channel_id, youtube_url=None):
+    data = {
         "id": session_id,
-        "template_id": template_id,
         "host_slack_user_id": host_slack_user_id,
         "host_token": host_token,
         "status": "waiting",
         "current_exercise_index": 0,
         "paused_elapsed": 0,
         "channel_id": channel_id,
-    }).execute()
+    }
+    if template_id is not None:
+        data["template_id"] = template_id
+    if youtube_url is not None:
+        data["youtube_url"] = youtube_url
+    get_client().table("workout_sessions").insert(data).execute()
+
+
+def get_active_session_for_channel(channel_id):
+    """Return the most recent non-finished session for a channel, or None."""
+    result = (
+        get_client()
+        .table("workout_sessions")
+        .select("*")
+        .eq("channel_id", channel_id)
+        .neq("status", "finished")
+        .limit(1)
+        .execute()
+    )
+    return result.data[0] if result.data else None
 
 
 def get_workout_session(session_id):
