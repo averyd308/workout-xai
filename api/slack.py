@@ -527,6 +527,231 @@ def handle_post_workout_button(ack, client, respond):
     respond(":white_check_mark: Button posted!")
 
 
+# ── Menu Button Handlers ───────────────────────────────────────────────────────
+
+@bolt_app.action("menu_my_stats")
+def handle_menu_my_stats(ack, body, client):
+    ack()
+    user_id = body["user"]["id"]
+    channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
+    try:
+        stats = database.get_user_stats(user_id)
+        if not stats:
+            client.chat_postEphemeral(channel=channel_id, user=user_id,
+                text="You haven't logged anything yet! React to today's post or use the Log Workout button.")
+            return
+        stretch = stats.get("stretch", 0)
+        workout = stats.get("workout", 0)
+        custom  = stats.get("custom", 0)
+        live    = stats.get("live", 0)
+        total   = sum(stats.values())
+        client.chat_postEphemeral(channel=channel_id, user=user_id, text=(
+            "*Your activity stats (all time):*\n"
+            f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
+            f":muscle:  Workouts: *{workout}*\n"
+            f":tv:  Live workouts: *{live}*\n"
+            f":runner:  Custom activities: *{custom}*\n"
+            "─────────────────────\n"
+            f"Total: *{total}* activities"
+        ))
+    except Exception as e:
+        logging.error(f"menu_my_stats error: {e}")
+
+
+@bolt_app.action("menu_weekly_leaderboard")
+def handle_menu_weekly_leaderboard(ack, client):
+    ack()
+    try:
+        rows, monday = database.get_weekly_leaderboard()
+        if not rows:
+            client.chat_postMessage(channel=CHANNEL_ID, text="No activity logged this week yet. Be the first!")
+            return
+        medals = ["🥇", "🥈", "🥉", "4.", "5."]
+        today = date.today()
+        lines = [f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*", ""]
+        for i, (uid, stretches, workouts, custom, live) in enumerate(rows[:5]):
+            total = stretches + workouts + custom + live
+            parts = []
+            if stretches: parts.append(f":person_in_lotus_position: {stretches}")
+            if workouts:  parts.append(f":muscle: {workouts}")
+            if live:      parts.append(f":tv: {live}")
+            if custom:    parts.append(f":runner: {custom}")
+            lines.append(f"{medals[i]} <@{uid}>: *{total}* total  ›  {'  •  '.join(parts) or 'no activity'}")
+        client.chat_postMessage(channel=CHANNEL_ID, text="\n".join(lines))
+    except Exception as e:
+        logging.error(f"menu_weekly_leaderboard error: {e}")
+
+
+@bolt_app.action("menu_alltime_leaderboard")
+def handle_menu_alltime_leaderboard(ack, client):
+    ack()
+    try:
+        rows = database.get_alltime_leaderboard()
+        if not rows:
+            client.chat_postMessage(channel=CHANNEL_ID, text="No activity logged yet. Be the first!")
+            return
+        result = _build_leaderboard_text("All-Time Leaderboard", rows)
+        client.chat_postMessage(channel=CHANNEL_ID, text=result["text"])
+    except Exception as e:
+        logging.error(f"menu_alltime_leaderboard error: {e}")
+
+
+@bolt_app.action("menu_log_workout")
+def handle_menu_log_workout(ack, body, client):
+    ack()
+    client.views_open(
+        trigger_id=body["trigger_id"],
+        view={
+            "type": "modal",
+            "callback_id": "log_workout_modal",
+            "title": {"type": "plain_text", "text": "Log Workout"},
+            "submit": {"type": "plain_text", "text": "Log It"},
+            "close": {"type": "plain_text", "text": "Cancel"},
+            "blocks": [{
+                "type": "input",
+                "block_id": "workout_block",
+                "label": {"type": "plain_text", "text": "What did you do?"},
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "workout_description",
+                    "placeholder": {"type": "plain_text", "text": "e.g. 30 min run, 20 min yoga…"},
+                },
+            }],
+        },
+    )
+
+
+@bolt_app.view("log_workout_modal")
+def handle_log_workout_modal(ack, view, body, client):
+    description = (view["state"]["values"]["workout_block"]["workout_description"]["value"] or "").strip()
+    if not description:
+        ack(response_action="errors", errors={"workout_block": "Please describe your workout."})
+        return
+    ack()
+    user_id = body["user"]["id"]
+    try:
+        database.log_activity(user_id, "custom", description)
+        stats = database.get_user_stats(user_id)
+        dm = client.conversations_open(users=user_id)
+        client.chat_postMessage(channel=dm["channel"]["id"], text=(
+            f":white_check_mark: Logged: _{description}_\n"
+            f"Custom activities: *{stats.get('custom', 0)}*  •  Total logged: *{sum(stats.values())}*"
+        ))
+    except Exception as e:
+        logging.error(f"log_workout_modal error: {e}")
+
+
+@bolt_app.action("menu_connect_strava")
+def handle_menu_connect_strava(ack, body, client):
+    ack()
+    user_id = body["user"]["id"]
+    channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
+    try:
+        client_id = os.environ.get("STRAVA_CLIENT_ID", "")
+        redirect_uri = urllib.parse.quote("https://workout-xai.vercel.app/api/strava/callback")
+        auth_url = (
+            f"https://www.strava.com/oauth/authorize?client_id={client_id}"
+            f"&redirect_uri={redirect_uri}&response_type=code"
+            f"&scope=activity:read_all&state={user_id}"
+        )
+        client.chat_postEphemeral(channel=channel_id, user=user_id,
+            text=f":strava: <{auth_url}|Click here to connect your Strava account> — only you can see this link.")
+    except Exception as e:
+        logging.error(f"menu_connect_strava error: {e}")
+
+
+@bolt_app.action("menu_set_reminder")
+def handle_menu_set_reminder(ack, body, client):
+    ack()
+    client.views_open(
+        trigger_id=body["trigger_id"],
+        view={
+            "type": "modal",
+            "callback_id": "set_reminder_modal",
+            "title": {"type": "plain_text", "text": "Set Daily Reminder"},
+            "submit": {"type": "plain_text", "text": "Save"},
+            "close": {"type": "plain_text", "text": "Cancel"},
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": "Get a daily DM reminder to check the workout post."},
+                },
+                {
+                    "type": "input",
+                    "block_id": "reminder_block",
+                    "label": {"type": "plain_text", "text": "Reminder Time"},
+                    "hint": {"type": "plain_text", "text": "Examples: 9:00am ET  •  2:30pm PT  •  14:30 America/Chicago"},
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "reminder_time",
+                        "placeholder": {"type": "plain_text", "text": "9:00am ET"},
+                    },
+                },
+            ],
+        },
+    )
+
+
+@bolt_app.view("set_reminder_modal")
+def handle_set_reminder_modal(ack, view, body, client):
+    text = (view["state"]["values"]["reminder_block"]["reminder_time"]["value"] or "").strip()
+    default_tz = os.environ.get("TIMEZONE", "America/New_York")
+    time_str, tz = parse_reminder_input(text, default_tz)
+    if not time_str:
+        ack(response_action="errors", errors={"reminder_block": "Couldn't parse that time. Try '9:00am ET' or '14:30 America/Chicago'."})
+        return
+    if not tz:
+        ack(response_action="errors", errors={"reminder_block": "Couldn't recognise that timezone. Try ET, CT, MT, or PT."})
+        return
+    ack()
+    user_id = body["user"]["id"]
+    try:
+        database.set_user_reminder(user_id, time_str, tz)
+        h, m = int(time_str[:2]), int(time_str[3:])
+        display = f"{h % 12 or 12}:{m:02d}{'am' if h < 12 else 'pm'}"
+        dm = client.conversations_open(users=user_id)
+        client.chat_postMessage(channel=dm["channel"]["id"],
+            text=f":alarm_clock: Got it! I'll DM you a reminder at *{display} {tz}* each day.")
+    except Exception as e:
+        logging.error(f"set_reminder_modal error: {e}")
+
+
+@bolt_app.command("/postmenu")
+def handle_post_menu(ack, client, respond):
+    ack()
+    client.chat_postMessage(
+        channel=CHANNEL_ID,
+        text="Workout Menu",
+        blocks=[
+            {"type": "header", "text": {"type": "plain_text", "text": "🏋️  Periodic Gains Menu"}},
+            {"type": "divider"},
+            {"type": "section", "text": {"type": "mrkdwn", "text": "*📊  Stats & Leaderboards*"}},
+            {"type": "actions", "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "My Stats"},             "action_id": "menu_my_stats"},
+                {"type": "button", "text": {"type": "plain_text", "text": "Weekly Leaderboard"},  "action_id": "menu_weekly_leaderboard"},
+                {"type": "button", "text": {"type": "plain_text", "text": "All-Time Leaderboard"},"action_id": "menu_alltime_leaderboard"},
+            ]},
+            {"type": "divider"},
+            {"type": "section", "text": {"type": "mrkdwn", "text": "*📝  Log Activity*"}},
+            {"type": "actions", "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "Log Workout"},   "action_id": "menu_log_workout"},
+                {"type": "button", "text": {"type": "plain_text", "text": "Connect Strava"},"action_id": "menu_connect_strava"},
+            ]},
+            {"type": "divider"},
+            {"type": "section", "text": {"type": "mrkdwn", "text": "*⏰  Settings*"}},
+            {"type": "actions", "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "Set Daily Reminder"}, "action_id": "menu_set_reminder"},
+            ]},
+            {"type": "divider"},
+            {"type": "section", "text": {"type": "mrkdwn", "text": "*📺  Live Workouts*"}},
+            {"type": "actions", "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "▶  Start Live Workout"}, "style": "primary", "action_id": "start_live_workout_btn"},
+            ]},
+        ],
+    )
+    respond(":white_check_mark: Menu posted! Pin that message so everyone can find it.")
+
+
 @bolt_app.command("/setvideo")
 def handle_set_video(ack, command, respond):
     ack()
