@@ -1,7 +1,49 @@
 import os
+import json
 from datetime import date, timedelta
 
 from supabase import create_client
+
+_DEFAULT_TEMPLATES = [
+    {
+        "id": "push-day",
+        "name": "Push Day",
+        "exercises": [
+            {"name": "Warm-up Jumping Jacks", "duration_seconds": 60, "rest_seconds": 15, "description": "Jump with arms and legs out simultaneously", "video_url": ""},
+            {"name": "Push-ups", "duration_seconds": 45, "rest_seconds": 15, "description": "Lower chest to floor, push back up. Modify by dropping to knees.", "video_url": "https://www.youtube.com/watch?v=IODxDxX7oi4"},
+            {"name": "Pike Push-ups", "duration_seconds": 45, "rest_seconds": 15, "description": "Hips high in inverted V shape, lower head toward floor.", "video_url": ""},
+            {"name": "Tricep Dips", "duration_seconds": 45, "rest_seconds": 15, "description": "Use a chair behind you, lower by bending elbows, push back up.", "video_url": ""},
+            {"name": "Diamond Push-ups", "duration_seconds": 45, "rest_seconds": 15, "description": "Hands form a diamond shape below chest.", "video_url": ""},
+            {"name": "Cool-down Stretch", "duration_seconds": 60, "rest_seconds": 0, "description": "Gentle chest opener, shoulder cross-body stretch, wrist circles.", "video_url": ""},
+        ],
+    },
+    {
+        "id": "core-blast",
+        "name": "Core Blast",
+        "exercises": [
+            {"name": "Warm-up March", "duration_seconds": 60, "rest_seconds": 15, "description": "March in place with high knees to get blood flowing.", "video_url": ""},
+            {"name": "Plank Hold", "duration_seconds": 45, "rest_seconds": 15, "description": "Straight line from head to heels. Squeeze glutes and core.", "video_url": ""},
+            {"name": "Crunches", "duration_seconds": 45, "rest_seconds": 15, "description": "Feet flat on floor, curl shoulders toward knees. Exhale on the way up.", "video_url": ""},
+            {"name": "Leg Raises", "duration_seconds": 45, "rest_seconds": 15, "description": "Lie flat, raise straight legs to 90 degrees, lower slowly.", "video_url": ""},
+            {"name": "Russian Twists", "duration_seconds": 45, "rest_seconds": 15, "description": "Sit at 45 degrees, feet off floor, twist torso side to side.", "video_url": ""},
+            {"name": "Mountain Climbers", "duration_seconds": 45, "rest_seconds": 15, "description": "Plank position, drive knees alternately to chest. Keep hips level.", "video_url": ""},
+            {"name": "Cool-down Stretch", "duration_seconds": 60, "rest_seconds": 0, "description": "Seated forward fold, child pose, lying twist.", "video_url": ""},
+        ],
+    },
+    {
+        "id": "full-body",
+        "name": "Full Body",
+        "exercises": [
+            {"name": "Jumping Jacks", "duration_seconds": 45, "rest_seconds": 15, "description": "Classic cardio warm-up. Arms and legs out simultaneously.", "video_url": ""},
+            {"name": "Squats", "duration_seconds": 45, "rest_seconds": 15, "description": "Feet shoulder-width, lower until thighs are parallel to floor. Chest up.", "video_url": ""},
+            {"name": "Push-ups", "duration_seconds": 45, "rest_seconds": 15, "description": "Lower chest to floor, push back up. Modify by dropping to knees.", "video_url": "https://www.youtube.com/watch?v=IODxDxX7oi4"},
+            {"name": "Reverse Lunges", "duration_seconds": 45, "rest_seconds": 15, "description": "Step back, lower back knee toward floor. Alternate legs.", "video_url": ""},
+            {"name": "Plank Hold", "duration_seconds": 45, "rest_seconds": 15, "description": "Hold a straight line from head to heels.", "video_url": ""},
+            {"name": "Burpees", "duration_seconds": 30, "rest_seconds": 20, "description": "Drop to push-up position, jump feet to hands, jump up with arms raised.", "video_url": ""},
+            {"name": "Cool-down Stretch", "duration_seconds": 60, "rest_seconds": 0, "description": "Standing quad stretch, hamstring stretch, shoulder rolls.", "video_url": ""},
+        ],
+    },
+]
 
 
 _client = None
@@ -232,3 +274,69 @@ def get_reminders_for_time(time_str, timezone):
     """Return list of user_ids whose reminder_time and timezone match."""
     result = get_client().table("user_reminders").select("user_id").eq("reminder_time", time_str).eq("timezone", timezone).execute()
     return [row["user_id"] for row in result.data]
+
+
+# ── Workout Templates & Sessions ──────────────────────────────────────────────
+
+def get_workout_templates():
+    result = get_client().table("workout_templates").select("*").execute()
+    return result.data
+
+
+def get_workout_template(template_id):
+    result = get_client().table("workout_templates").select("*").eq("id", template_id).execute()
+    return result.data[0] if result.data else None
+
+
+def get_workout_template_by_name(name):
+    """Case-insensitive exact match on name."""
+    result = get_client().table("workout_templates").select("*").ilike("name", name).execute()
+    return result.data[0] if result.data else None
+
+
+def seed_workout_templates():
+    """Insert default templates if the table is empty."""
+    client = get_client()
+    existing = client.table("workout_templates").select("id").execute()
+    existing_ids = {r["id"] for r in existing.data}
+    for t in _DEFAULT_TEMPLATES:
+        if t["id"] not in existing_ids:
+            client.table("workout_templates").insert({
+                "id": t["id"],
+                "name": t["name"],
+                "exercises": json.dumps(t["exercises"]),
+            }).execute()
+
+
+def create_workout_session(session_id, template_id, host_slack_user_id, host_token, channel_id):
+    get_client().table("workout_sessions").insert({
+        "id": session_id,
+        "template_id": template_id,
+        "host_slack_user_id": host_slack_user_id,
+        "host_token": host_token,
+        "status": "waiting",
+        "current_exercise_index": 0,
+        "paused_elapsed": 0,
+        "channel_id": channel_id,
+    }).execute()
+
+
+def get_workout_session(session_id):
+    result = get_client().table("workout_sessions").select("*").eq("id", session_id).execute()
+    return result.data[0] if result.data else None
+
+
+def update_workout_session(session_id, data):
+    get_client().table("workout_sessions").update(data).eq("id", session_id).execute()
+
+
+def add_session_participant(session_id, display_name):
+    get_client().table("session_participants").insert({
+        "session_id": session_id,
+        "display_name": display_name,
+    }).execute()
+
+
+def get_session_participants(session_id):
+    result = get_client().table("session_participants").select("display_name,joined_at").eq("session_id", session_id).order("joined_at").execute()
+    return result.data
