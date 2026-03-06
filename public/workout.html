@@ -356,9 +356,8 @@ function render(data) {
   document.getElementById('loading').style.display = 'none';
 
   if (session.status === 'finished') { showFinished(session, template, participants); return; }
+  if (!myName) { showJoin(template); return; }
   if (session.status === 'waiting')  { showWaiting(session, template, participants);  return; }
-
-  if (!IS_HOST && !myName) { showJoin(template); return; }
 
   showWorkout(session, template, participants);
 }
