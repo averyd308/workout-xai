@@ -440,6 +440,7 @@ def handle_start_workout(ack, command, respond):
             return
 
         database.create_workout_session(session_id, template["id"], user_id, host_token, CHANNEL_ID)
+        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
 
         exercises = template.get("exercises", [])
         total_s = sum(e.get("duration_seconds", 0) + e.get("rest_seconds", 0) for e in exercises)
@@ -489,6 +490,7 @@ def handle_start_video_session(ack, command, respond):
         host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
 
         database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None)
+        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
 
         bolt_app.client.chat_postMessage(
             channel=CHANNEL_ID,

@@ -333,10 +333,16 @@ def get_active_session_for_channel(channel_id):
         .select("*")
         .eq("channel_id", channel_id)
         .neq("status", "finished")
+        .order("created_at", desc=True)
         .limit(1)
         .execute()
     )
     return result.data[0] if result.data else None
+
+
+def finish_old_sessions_for_channel(channel_id, except_session_id):
+    """Mark all non-finished sessions for a channel as finished, except the given one."""
+    get_client().table("workout_sessions").update({"status": "finished"}).eq("channel_id", channel_id).neq("status", "finished").neq("id", except_session_id).execute()
 
 
 def get_workout_session(session_id):
