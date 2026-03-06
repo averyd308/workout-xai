@@ -388,7 +388,7 @@ def handle_start_workout(ack, command, respond):
         respond(
             f"Usage: `/startlive [template name]`\n"
             f"Available templates: {names}\n"
-            f"To start a video session: `/startliveYT`"
+            f"To start a video session: `/startliveyt`"
         )
         return
 
@@ -477,7 +477,7 @@ def handle_start_workout(ack, command, respond):
     respond(":white_check_mark: Session started! Join link posted to the channel.")
 
 
-@bolt_app.command("/startliveYT")
+@bolt_app.command("/startliveyt")
 def handle_start_video_session(ack, command, respond):
     ack()
     try:
