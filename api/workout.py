@@ -96,11 +96,19 @@ def control_session(session_id):
     now = time.time()
 
     if action == "start":
-        database.update_workout_session(session_id, {
-            "status": "active",
-            "exercise_start_time": now,
-            "paused_elapsed": 0,
-        })
+        if session.get("youtube_url"):
+            # Video session: start paused so host decides when to begin playback
+            database.update_workout_session(session_id, {
+                "status": "paused",
+                "exercise_start_time": now,
+                "paused_elapsed": 0,
+            })
+        else:
+            database.update_workout_session(session_id, {
+                "status": "active",
+                "exercise_start_time": now,
+                "paused_elapsed": 0,
+            })
 
     elif action == "pause" and session["status"] == "active":
         start = session.get("exercise_start_time") or now
