@@ -34,7 +34,8 @@ def get_session(session_id):
         if not template:
             return jsonify({"error": "Template not found"}), 404
     participants = database.get_session_participants(session_id)
-    return jsonify({"session": session, "template": template, "participants": participants})
+    messages = database.get_session_messages(session_id)
+    return jsonify({"session": session, "template": template, "participants": participants, "messages": messages})
 
 
 @flask_app.route("/api/workout/session/<session_id>/join", methods=["POST"])
@@ -47,6 +48,33 @@ def join_session(session_id):
     if not session:
         return jsonify({"error": "Session not found"}), 404
     database.add_session_participant(session_id, name)
+    return jsonify({"ok": True})
+
+
+@flask_app.route("/api/workout/session/<session_id>/chat", methods=["POST"])
+def send_chat(session_id):
+    data = request.get_json() or {}
+    name = str(data.get("name", "")).strip()[:50]
+    message = str(data.get("message", "")).strip()[:300]
+    if not name or not message:
+        return jsonify({"error": "Name and message required"}), 400
+    session = database.get_workout_session(session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+    database.add_session_message(session_id, name, message)
+    return jsonify({"ok": True})
+
+
+@flask_app.route("/api/workout/session/<session_id>/ready", methods=["POST"])
+def mark_ready(session_id):
+    data = request.get_json() or {}
+    name = str(data.get("name", "")).strip()[:50]
+    if not name:
+        return jsonify({"error": "Name required"}), 400
+    session = database.get_workout_session(session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+    database.mark_participant_ready(session_id, name)
     return jsonify({"ok": True})
 
 

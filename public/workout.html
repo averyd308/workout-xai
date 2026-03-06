@@ -156,6 +156,21 @@
     .text-muted { color: var(--muted); font-size: 0.88rem; }
     .flex { display: flex; } .gap-1 { gap: 0.5rem; } .flex-wrap { flex-wrap: wrap; }
     code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+
+    /* Chat */
+    .chat-panel { width: 100%; max-width: 560px; margin-top: 0.875rem; }
+    .chat-header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .chat-messages { height: 200px; overflow-y: auto; padding: 0.875rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .chat-messages:empty::before { content: 'No messages yet…'; color: var(--muted); font-size: 0.88rem; align-self: center; margin-top: auto; margin-bottom: auto; }
+    .chat-msg { display: flex; flex-direction: column; max-width: 80%; }
+    .chat-msg.mine { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.theirs { align-self: flex-start; align-items: flex-start; }
+    .chat-bubble { padding: 0.45rem 0.8rem; border-radius: 14px; font-size: 0.92rem; line-height: 1.45; word-break: break-word; }
+    .chat-msg.mine .chat-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+    .chat-msg.theirs .chat-bubble { background: rgba(255,255,255,0.07); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .chat-meta { font-size: 0.71rem; color: var(--muted); margin-bottom: 0.18rem; padding: 0 0.2rem; }
+    .chat-input-row { border-top: 1px solid var(--border); padding: 0.625rem; display: flex; gap: 0.5rem; }
+    .chat-input-row input { flex: 1; padding: 0.5rem 0.75rem; font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -195,6 +210,10 @@
     <div id="waiting-meta" class="mb-2 text-muted"></div>
     <p style="font-size:0.82rem; color:var(--muted); margin-bottom:0.5rem">Who's here:</p>
     <ul class="waiting-list" id="waiting-list"></ul>
+    <div id="ready-count" class="mt-1" style="font-size:0.85rem; color:var(--muted); display:none"></div>
+    <div id="ready-btn-wrap" style="display:none; margin-top:0.75rem">
+      <button class="btn btn-green btn-lg" id="ready-btn" onclick="markReady()">&#x2713;&nbsp; I'm Ready!</button>
+    </div>
     <div id="host-start-wrap" style="display:none; margin-top:1rem">
       <button class="btn btn-green btn-lg" onclick="hostControl('start')">&#x25B6;&nbsp; Start</button>
     </div>
@@ -296,6 +315,19 @@
   </div>
 </div>
 
+<!-- CHAT PANEL (shown on waiting + workout screens) -->
+<div id="chat-panel" class="chat-panel" style="display:none">
+  <div class="card" style="padding:0; overflow:hidden">
+    <div class="chat-header">Chat</div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Message&hellip;" maxlength="300"
+             onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 //  STATE
@@ -305,11 +337,12 @@ const SESSION_ID = params.get('id');
 const HOST_TOKEN = params.get('host_token') || null;
 const IS_HOST    = !!HOST_TOKEN;
 
-let myName     = sessionStorage.getItem('wname_' + SESSION_ID) || null;
-let serverData = null;
-let pollTimer  = null;
-let tickTimer  = null;
-let autoAdv    = false;
+let myName          = sessionStorage.getItem('wname_' + SESSION_ID) || null;
+let serverData      = null;
+let pollTimer       = null;
+let tickTimer       = null;
+let autoAdv         = false;
+let lastMsgCount    = -1;
 
 // YouTube
 let ytPlayer       = null;
@@ -352,14 +385,16 @@ function schedulePoll(ms) {
 //  RENDER
 // ============================================================
 function render(data) {
-  const { session, template, participants } = data;
+  const { session, template, participants, messages = [] } = data;
   document.getElementById('loading').style.display = 'none';
+  renderChat(messages);
 
   if (session.status === 'finished') { showFinished(session, template, participants); return; }
   if (!myName) { showJoin(template); return; }
-  if (session.status === 'waiting')  { showWaiting(session, template, participants);  return; }
+  if (session.status === 'waiting')  { showWaiting(session, template, participants);  showChat(true); return; }
 
   showWorkout(session, template, participants);
+  showChat(true);
 }
 
 // ============================================================
@@ -367,6 +402,7 @@ function render(data) {
 // ============================================================
 function showJoin(template) {
   activateScreen('join');
+  showChat(false);
   document.getElementById('join-title').textContent = template ? template.name : 'Video Workout';
 }
 
@@ -417,10 +453,29 @@ function showWaiting(session, template, participants) {
   } else {
     participants.forEach(p => {
       const li = document.createElement('li');
-      li.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;display:inline-block"></span>' + esc(p.display_name);
+      const readyMark = p.is_ready
+        ? ' <span style="color:var(--green);font-size:0.82em;font-weight:600">\u2713 ready</span>' : '';
+      li.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;display:inline-block"></span>'
+        + esc(p.display_name) + readyMark;
       ul.appendChild(li);
     });
   }
+
+  // Ready button
+  const readyCountEl  = document.getElementById('ready-count');
+  const readyBtnWrap  = document.getElementById('ready-btn-wrap');
+  const readyCount    = participants.filter(p => p.is_ready).length;
+  if (participants.length > 0) {
+    readyCountEl.textContent = readyCount + ' / ' + participants.length + ' ready';
+    readyCountEl.style.display = 'block';
+  } else {
+    readyCountEl.style.display = 'none';
+  }
+  const alreadyReady = participants.some(p => p.display_name === myName && p.is_ready);
+  readyBtnWrap.style.display = 'block';
+  const readyBtn = document.getElementById('ready-btn');
+  readyBtn.disabled = alreadyReady;
+  readyBtn.textContent = alreadyReady ? '\u2713 Ready!' : '\u2713 I\'m Ready!';
 
   document.getElementById('host-start-wrap').style.display = IS_HOST ? 'block' : 'none';
   schedulePoll(2500);
@@ -596,6 +651,7 @@ function runExerciseMode(session, template) {
 // ============================================================
 function showFinished(session, template, participants) {
   activateScreen('finished');
+  showChat(false);
   clearTimeout(tickTimer);
   clearTimeout(pollTimer);
   document.getElementById('finish-sub').textContent = template ? template.name : 'Video Workout';
@@ -735,6 +791,63 @@ function tapToPlay() {
     ytPlayer.playVideo();
   }
   document.getElementById('yt-tap-overlay').style.display = 'none';
+}
+
+// ============================================================
+//  CHAT & READY
+// ============================================================
+function showChat(visible) {
+  document.getElementById('chat-panel').style.display = visible ? 'block' : 'none';
+}
+
+function renderChat(messages) {
+  if (messages.length === lastMsgCount) return;
+  const container = document.getElementById('chat-messages');
+  const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+  lastMsgCount = messages.length;
+  container.innerHTML = '';
+  messages.forEach(msg => {
+    const isMine = msg.display_name === myName;
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + (isMine ? 'mine' : 'theirs');
+    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    div.innerHTML = '<div class="chat-meta">' + (isMine ? '' : esc(msg.display_name) + ' \u00b7 ') + time + '</div>'
+      + '<div class="chat-bubble">' + esc(msg.message) + '</div>';
+    container.appendChild(div);
+  });
+  if (atBottom || messages.length === 1) container.scrollTop = container.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message || !myName) return;
+  input.value = '';
+  try {
+    await fetch('/api/workout/session/' + SESSION_ID + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: myName, message }),
+    });
+    clearTimeout(pollTimer);
+    await poll();
+    document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+  } catch(e) { console.error('Chat error:', e); }
+}
+
+async function markReady() {
+  if (!myName) return;
+  const btn = document.getElementById('ready-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '\u2713 Ready!'; }
+  try {
+    await fetch('/api/workout/session/' + SESSION_ID + '/ready', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: myName }),
+    });
+    clearTimeout(pollTimer);
+    await poll();
+  } catch(e) { console.error('Ready error:', e); }
 }
 
 // ============================================================

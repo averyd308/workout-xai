@@ -362,5 +362,25 @@ def add_session_participant(session_id, display_name):
 
 
 def get_session_participants(session_id):
-    result = get_client().table("session_participants").select("display_name,joined_at").eq("session_id", session_id).order("joined_at").execute()
+    result = get_client().table("session_participants").select("*").eq("session_id", session_id).order("joined_at").execute()
     return result.data
+
+
+def mark_participant_ready(session_id, display_name):
+    get_client().table("session_participants").update({"is_ready": True}).eq("session_id", session_id).eq("display_name", display_name).execute()
+
+
+def add_session_message(session_id, display_name, message):
+    get_client().table("session_messages").insert({
+        "session_id": session_id,
+        "display_name": display_name,
+        "message": message,
+    }).execute()
+
+
+def get_session_messages(session_id, limit=100):
+    try:
+        result = get_client().table("session_messages").select("display_name,message,created_at").eq("session_id", session_id).order("created_at").limit(limit).execute()
+        return result.data
+    except Exception:
+        return []
