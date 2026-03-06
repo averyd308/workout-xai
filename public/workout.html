@@ -655,12 +655,16 @@ function createYTPlayer(videoId) {
     playerVars: { autoplay: 0, rel: 0, modestbranding: 1, playsinline: 1 },
     events: {
       onReady: (event) => {
-        // Force the iframe to fill the container regardless of how YT sizes it
         const iframe = event.target.getIframe();
         iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none';
         ytReady = true;
         currentVideoId = videoId;
         if (serverData) syncVideo(serverData.session);
+      },
+      onStateChange: (event) => {
+        if (event.data === YT.PlayerState.PLAYING) {
+          document.getElementById('yt-tap-overlay').style.display = 'none';
+        }
       },
       onError: (e) => console.warn('YT error', e.data),
     },
@@ -702,17 +706,10 @@ function syncVideo(session) {
       const notPlaying = state !== YT.PlayerState.PLAYING && state !== YT.PlayerState.BUFFERING;
 
       if (notPlaying) {
+        document.getElementById('yt-tap-overlay').style.display = 'flex';
         ytPlayer.seekTo(target, true);
         ytPlayer.playVideo();
-        // Show tap overlay if autoplay is blocked (common on mobile)
-        setTimeout(() => {
-          try {
-            const s = ytPlayer.getPlayerState();
-            if (s !== YT.PlayerState.PLAYING && s !== YT.PlayerState.BUFFERING) {
-              document.getElementById('yt-tap-overlay').style.display = 'flex';
-            }
-          } catch(e) {}
-        }, 1500);
+        // onStateChange hides overlay once video actually starts playing
       } else if (Math.abs(current - target) > 4) {
         ytPlayer.seekTo(target, true);
       }
