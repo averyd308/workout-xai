@@ -388,8 +388,37 @@ def handle_cancel_reminder(ack, command, respond):
 
 # ── Group Workout Commands ─────────────────────────────────────────────────────
 
-def _start_live_session(user_id, client):
-    """Create a live video session, post to channel, and DM the host. Returns host_url."""
+def _start_workout_modal_view():
+    return {
+        "type": "modal",
+        "callback_id": "start_workout_modal",
+        "title": {"type": "plain_text", "text": "Start Live Workout"},
+        "submit": {"type": "plain_text", "text": "Start Session"},
+        "close": {"type": "plain_text", "text": "Cancel"},
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Paste the YouTube video everyone will follow along to. The join link will be posted to the channel and you'll get the host link via DM.",
+                },
+            },
+            {
+                "type": "input",
+                "block_id": "youtube_block",
+                "label": {"type": "plain_text", "text": "YouTube URL"},
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "youtube_url",
+                    "placeholder": {"type": "plain_text", "text": "https://youtube.com/watch?v=..."},
+                },
+            },
+        ],
+    }
+
+
+def _start_live_session(user_id, client, youtube_url=None):
+    """Create a live video session, post to channel, and DM the host."""
     session_id = secrets.token_urlsafe(8)
     host_token = secrets.token_urlsafe(16)
     base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
@@ -413,9 +442,10 @@ def _start_live_session(user_id, client):
             }
         ],
     )
-    database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None, message_ts=msg["ts"])
+    database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=youtube_url, message_ts=msg["ts"])
     database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
 
+    dm_note = "Press *Start* when everyone is ready!" if youtube_url else "Set the video with `/setvideo [YouTube URL]`, then press *Start*."
     try:
         dm = client.conversations_open(users=user_id)
         client.chat_postMessage(
@@ -424,56 +454,77 @@ def _start_live_session(user_id, client):
                 f":crown: You started a group video session!\n"
                 f"Use this private link to control the video:\n{host_url}\n\n"
                 f"_Keep this link private — it gives you host controls._\n\n"
-                f"Set the video with `/setvideo [YouTube URL]`, then press Start."
+                f"{dm_note}"
             ),
         )
     except Exception as e:
         logging.error(f"live session DM error: {e}")
 
-    return host_url
+
+def _open_start_modal(client, trigger_id):
+    client.views_open(trigger_id=trigger_id, view=_start_workout_modal_view())
 
 
 @bolt_app.command("/startliveyt")
-def handle_start_video_session(ack, command, client, respond):
+def handle_start_video_session(ack, command, client):
     ack()
-    try:
-        _start_live_session(command["user_id"], client)
-        respond(":white_check_mark: Video session started! Use `/setvideo [YouTube URL]` to set the video, then press Start in the session.")
-    except Exception as e:
-        logging.error(f"/startliveyt error: {e}")
-        respond(f"Error: {e}")
+    _open_start_modal(client, command["trigger_id"])
 
 
 @bolt_app.shortcut("start_live_workout")
 def handle_start_live_shortcut(ack, shortcut, client):
     ack()
+    _open_start_modal(client, shortcut["trigger_id"])
+
+
+@bolt_app.action("start_live_workout_btn")
+def handle_start_workout_button(ack, body, client):
+    ack()
+    _open_start_modal(client, body["trigger_id"])
+
+
+@bolt_app.view("start_workout_modal")
+def handle_start_workout_modal(ack, view, body, client):
+    raw = (view["state"]["values"]["youtube_block"]["youtube_url"]["value"] or "").strip()
+    video_id = _extract_youtube_id(raw)
+    if not video_id:
+        ack(response_action="errors", errors={"youtube_block": "Please enter a valid YouTube URL (youtube.com/watch?v=... or youtu.be/...)"})
+        return
+    ack()
     try:
-        _start_live_session(shortcut["user"]["id"], client)
-        client.views_open(
-            trigger_id=shortcut["trigger_id"],
-            view={
-                "type": "modal",
-                "title": {"type": "plain_text", "text": "Session Started!"},
-                "close": {"type": "plain_text", "text": "Close"},
-                "blocks": [
+        _start_live_session(body["user"]["id"], client, youtube_url=f"https://www.youtube.com/watch?v={video_id}")
+    except Exception as e:
+        logging.error(f"start_workout_modal error: {e}")
+
+
+@bolt_app.command("/postworkoutbutton")
+def handle_post_workout_button(ack, client, respond):
+    ack()
+    client.chat_postMessage(
+        channel=CHANNEL_ID,
+        text="Start a live workout session",
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": ":tv: *Ready for a group workout?*\nClick below to start a live session — you'll pick the YouTube video and the join link will be posted here.",
+                },
+            },
+            {
+                "type": "actions",
+                "elements": [
                     {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": (
-                                ":tv: *Live workout session started!*\n\n"
-                                "Check your DMs for the host link.\n\n"
-                                "Next steps:\n"
-                                "1. Run `/setvideo [YouTube URL]` to set the video\n"
-                                "2. Open your host link and press *Start*"
-                            ),
-                        },
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "▶  Start Live Workout"},
+                        "style": "primary",
+                        "action_id": "start_live_workout_btn",
                     }
                 ],
             },
-        )
-    except Exception as e:
-        logging.error(f"start_live_workout shortcut error: {e}")
+        ],
+    )
+    respond(":white_check_mark: Button posted!")
 
 
 @bolt_app.command("/setvideo")
