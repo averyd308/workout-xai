@@ -355,7 +355,11 @@ def update_workout_session(session_id, data):
 
 
 def add_session_participant(session_id, display_name):
-    get_client().table("session_participants").insert({
+    client = get_client()
+    existing = client.table("session_participants").select("id").eq("session_id", session_id).eq("display_name", display_name).execute()
+    if existing.data:
+        return
+    client.table("session_participants").insert({
         "session_id": session_id,
         "display_name": display_name,
     }).execute()
