@@ -16,6 +16,8 @@ import time as _time
 import database
 from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input
 
+LIVE_EMOJI = "tv"
+
 _YOUTUBE_RE = re.compile(
     r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?[^\s]*v=|youtu\.be/)([a-zA-Z0-9_-]{11})'
 )
@@ -43,13 +45,26 @@ def handle_reaction_added(event):
         return
 
     post = database.get_post_by_ts(event["item"]["ts"])
+    user_id = event["user"]
+    emoji = event["reaction"]
+
     if not post:
+        if emoji == LIVE_EMOJI:
+            session = database.get_workout_session_by_ts(event["item"]["ts"])
+            if session:
+                logged = database.log_activity(user_id, "live", f"Live workout ({session['id']})")
+                if logged:
+                    stats = database.get_user_stats(user_id)
+                    count = stats.get("live", 0)
+                    bolt_app.client.chat_postEphemeral(
+                        channel=session["channel_id"],
+                        user=user_id,
+                        text=f":tv: Logged! You've joined *{count}* live workout{'s' if count != 1 else ''} total.",
+                    )
         return
 
     stretch_title = post["stretch_option"]
     workout_title = post["workout_option"]
-    user_id = event["user"]
-    emoji = event["reaction"]
 
     if emoji == STRETCH_EMOJI:
         logged = database.log_activity(user_id, "stretch", stretch_title)
@@ -97,11 +112,15 @@ def handle_reaction_removed(event):
         return
 
     post = database.get_post_by_ts(event["item"]["ts"])
-    if not post:
-        return
-
     user_id = event["user"]
     emoji = event["reaction"]
+
+    if not post:
+        if emoji == LIVE_EMOJI:
+            session = database.get_workout_session_by_ts(event["item"]["ts"])
+            if session:
+                database.remove_activity(user_id, "live")
+        return
 
     if emoji == STRETCH_EMOJI:
         database.remove_activity(user_id, "stretch")
@@ -156,15 +175,18 @@ def handle_mystats(ack, command):
     stretch = stats.get("stretch", 0)
     workout = stats.get("workout", 0)
     custom = stats.get("custom", 0)
+    live = stats.get("live", 0)
     total = sum(stats.values())
-    ack(
-        f"*Your activity stats (all time):*\n"
-        f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
-        f":muscle:  Workouts: *{workout}*\n"
-        f":runner:  Custom activities: *{custom}*\n"
-        f"─────────────────────\n"
-        f"Total: *{total}* activities"
-    )
+    lines = [
+        "*Your activity stats (all time):*",
+        f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
+        f":muscle:  Workouts: *{workout}*",
+        f":tv:  Live workouts: *{live}*",
+        f":runner:  Custom activities: *{custom}*",
+        "─────────────────────",
+        f"Total: *{total}* activities",
+    ]
+    ack("\n".join(lines))
 
 
 @bolt_app.command("/teamstats")
@@ -185,14 +207,16 @@ def handle_teamstats(ack, command):
 def _build_leaderboard_text(title, rows):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
-    for i, (user_id, stretches, workouts, custom) in enumerate(rows):
-        total = stretches + workouts + custom
+    for i, (user_id, stretches, workouts, custom, live) in enumerate(rows):
+        total = stretches + workouts + custom + live
         medal = medals[i] if i < 3 else f"{i + 1}."
         parts = []
         if stretches:
             parts.append(f":person_in_lotus_position: {stretches}")
         if workouts:
             parts.append(f":muscle: {workouts}")
+        if live:
+            parts.append(f":tv: {live}")
         if custom:
             parts.append(f":runner: {custom}")
         detail = "  •  ".join(parts) if parts else "no activity"
@@ -212,14 +236,16 @@ def handle_weekly_leaderboard(ack, respond):
     today = date.today()
     title = f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*"
     lines = [title, ""]
-    for i, (user_id, stretches, workouts, custom) in enumerate(rows[:5]):
-        total = stretches + workouts + custom
+    for i, (user_id, stretches, workouts, custom, live) in enumerate(rows[:5]):
+        total = stretches + workouts + custom + live
         medal = medals[i]
         parts = []
         if stretches:
             parts.append(f":person_in_lotus_position: {stretches}")
         if workouts:
             parts.append(f":muscle: {workouts}")
+        if live:
+            parts.append(f":tv: {live}")
         if custom:
             parts.append(f":runner: {custom}")
         detail = "  •  ".join(parts) if parts else "no activity"
@@ -439,14 +465,11 @@ def handle_start_workout(ack, command, respond):
             respond(f":x: No template found matching \"{text}\". Use `/liveworkouts` to see options.")
             return
 
-        database.create_workout_session(session_id, template["id"], user_id, host_token, CHANNEL_ID)
-        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
-
         exercises = template.get("exercises", [])
         total_s = sum(e.get("duration_seconds", 0) + e.get("rest_seconds", 0) for e in exercises)
         mins = total_s // 60
 
-        bolt_app.client.chat_postMessage(
+        msg = bolt_app.client.chat_postMessage(
             channel=CHANNEL_ID,
             text=f":muscle: <@{user_id}> started a {template['name']} group workout! Join here: {join_url}",
             blocks=[
@@ -463,6 +486,8 @@ def handle_start_workout(ack, command, respond):
                 }
             ],
         )
+        database.create_workout_session(session_id, template["id"], user_id, host_token, CHANNEL_ID, message_ts=msg["ts"])
+        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
         dm_text = (
             f":crown: You started *{template['name']}*!\n"
             f"Use this private link to control the workout:\n{host_url}\n\n"
@@ -489,10 +514,7 @@ def handle_start_video_session(ack, command, respond):
         join_url = f"{base_url}/workout?id={session_id}"
         host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
 
-        database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None)
-        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
-
-        bolt_app.client.chat_postMessage(
+        msg = bolt_app.client.chat_postMessage(
             channel=CHANNEL_ID,
             text=f":tv: <@{user_id}> started a group video workout! Join here: {join_url}",
             blocks=[
@@ -509,6 +531,8 @@ def handle_start_video_session(ack, command, respond):
                 }
             ],
         )
+        database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None, message_ts=msg["ts"])
+        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
 
         try:
             dm = bolt_app.client.conversations_open(users=user_id)

@@ -137,14 +137,11 @@ def get_weekly_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0}
-        if row["activity_type"] == "stretch":
-            stats[uid]["stretch"] += 1
-        elif row["activity_type"] == "workout":
-            stats[uid]["workout"] += 1
-        elif row["activity_type"] == "custom":
-            stats[uid]["custom"] += 1
-    rows = sorted([(uid, s["stretch"], s["workout"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3], reverse=True)
+            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0, "live": 0}
+        t = row["activity_type"]
+        if t in stats[uid]:
+            stats[uid][t] += 1
+    rows = sorted([(uid, s["stretch"], s["workout"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4], reverse=True)
     return rows, monday
 
 
@@ -160,14 +157,11 @@ def get_alltime_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0}
-        if row["activity_type"] == "stretch":
-            stats[uid]["stretch"] += 1
-        elif row["activity_type"] == "workout":
-            stats[uid]["workout"] += 1
-        elif row["activity_type"] == "custom":
-            stats[uid]["custom"] += 1
-    return sorted([(uid, s["stretch"], s["workout"], s["custom"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3], reverse=True)
+            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0, "live": 0}
+        t = row["activity_type"]
+        if t in stats[uid]:
+            stats[uid][t] += 1
+    return sorted([(uid, s["stretch"], s["workout"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4], reverse=True)
 
 
 def get_setting(key, default=None):
@@ -308,7 +302,7 @@ def seed_workout_templates():
             }).execute()
 
 
-def create_workout_session(session_id, template_id, host_slack_user_id, host_token, channel_id, youtube_url=None):
+def create_workout_session(session_id, template_id, host_slack_user_id, host_token, channel_id, youtube_url=None, message_ts=None):
     data = {
         "id": session_id,
         "host_slack_user_id": host_slack_user_id,
@@ -322,7 +316,14 @@ def create_workout_session(session_id, template_id, host_slack_user_id, host_tok
         data["template_id"] = template_id
     if youtube_url is not None:
         data["youtube_url"] = youtube_url
+    if message_ts is not None:
+        data["message_ts"] = message_ts
     get_client().table("workout_sessions").insert(data).execute()
+
+
+def get_workout_session_by_ts(message_ts):
+    result = get_client().table("workout_sessions").select("*").eq("message_ts", message_ts).execute()
+    return result.data[0] if result.data else None
 
 
 def get_active_session_for_channel(channel_id):
