@@ -388,7 +388,7 @@ def handle_start_workout(ack, command, respond):
         respond(
             f"Usage:\n"
             f"• `/startlive [template name]` — guided exercise session\n"
-            f"• `/startlive YT [youtube URL]` — sync a YouTube video for the group\n"
+            f"• `/startlive YT` — start a video session (set the video with `/setvideo`)\n"
             f"Available templates: {names}"
         )
         return
@@ -400,19 +400,13 @@ def handle_start_workout(ack, command, respond):
     join_url = f"{base_url}/workout?id={session_id}"
     host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
 
-    # Detect "YT <url>" prefix
-    yt_prefix = text.split(None, 1)
+    # Detect "YT" keyword
     video_id = None
-    if yt_prefix[0].upper() == "YT":
-        url_part = yt_prefix[1] if len(yt_prefix) > 1 else ""
-        video_id = _extract_youtube_id(url_part)
-        if not video_id:
-            respond(":x: Please include a YouTube URL after `YT`. Example: `/startlive YT https://youtube.com/watch?v=xxxx`")
-            return
+    is_yt_session = text.strip().upper() == "YT"
 
-    if video_id:
+    if is_yt_session:
         # ── YouTube video session ──────────────────────────────────────────
-        youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+        youtube_url = None  # host sets it via /setvideo
         database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=youtube_url)
 
         bolt_app.client.chat_postMessage(
