@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import secrets
 import urllib.parse
 from datetime import date, timedelta
 
@@ -346,6 +347,90 @@ def handle_cancel_reminder(ack, command, respond):
     except Exception as e:
         logging.error(f"/cancelreminder error: {e}")
         respond(f"Error: {e}")
+
+
+# ── Group Workout Commands ─────────────────────────────────────────────────────
+
+@bolt_app.command("/liveworkouts")
+def handle_workouts(ack, respond):
+    ack()
+    templates = database.get_workout_templates()
+    if not templates:
+        respond("No workout templates available yet.")
+        return
+    lines = ["*Available workout templates:*\n"]
+    for t in templates:
+        exercises = t.get("exercises", [])
+        total_s = sum(e.get("duration_seconds", 0) + e.get("rest_seconds", 0) for e in exercises)
+        mins = total_s // 60
+        lines.append(f"• *{t['name']}*  —  {len(exercises)} exercises, ~{mins} min  —  `/startlive {t['name']}`")
+    respond("\n".join(lines))
+
+
+@bolt_app.command("/startlive")
+def handle_start_workout(ack, command, respond):
+    ack()
+    text = command["text"].strip()
+    if not text:
+        templates = database.get_workout_templates()
+        names = ", ".join(f"`{t['name']}`" for t in templates) if templates else "none"
+        respond(f"Usage: `/startlive [template name]`\nAvailable: {names}")
+        return
+
+    template = database.get_workout_template_by_name(text)
+    if not template:
+        # Try partial match
+        all_templates = database.get_workout_templates()
+        template = next((t for t in all_templates if text.lower() in t["name"].lower()), None)
+    if not template:
+        respond(f":x: No template found matching \"{text}\". Use `/workouts` to see options.")
+        return
+
+    user_id = command["user_id"]
+    session_id = secrets.token_urlsafe(8)
+    host_token = secrets.token_urlsafe(16)
+    database.create_workout_session(session_id, template["id"], user_id, host_token, CHANNEL_ID)
+
+    base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
+    join_url = f"{base_url}/workout?id={session_id}"
+    host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
+
+    exercises = template.get("exercises", [])
+    total_s = sum(e.get("duration_seconds", 0) + e.get("rest_seconds", 0) for e in exercises)
+    mins = total_s // 60
+
+    bolt_app.client.chat_postMessage(
+        channel=CHANNEL_ID,
+        text=f":muscle: <@{user_id}> started a {template['name']} group workout! Join here: {join_url}",
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f":muscle: *<@{user_id}> is starting a group workout!*\n"
+                        f"*{template['name']}*  •  {len(exercises)} exercises  •  ~{mins} min\n\n"
+                        f"<{join_url}|:arrow_right:  Click here to join the live session>"
+                    ),
+                },
+            }
+        ],
+    )
+
+    try:
+        dm = bolt_app.client.conversations_open(users=user_id)
+        bolt_app.client.chat_postMessage(
+            channel=dm["channel"]["id"],
+            text=(
+                f":crown: You started *{template['name']}*!\n"
+                f"Use this private link to control the workout:\n{host_url}\n\n"
+                f"_Keep this link private — it gives you host controls._"
+            ),
+        )
+    except Exception as e:
+        logging.error(f"/startworkout DM error: {e}")
+
+    respond(f":white_check_mark: Session started! Join link posted to the channel.")
 
 
 # ── Strava Commands ────────────────────────────────────────────────────────────
