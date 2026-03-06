@@ -388,7 +388,7 @@ def handle_start_workout(ack, command, respond):
         respond(
             f"Usage:\n"
             f"• `/startlive [template name]` — guided exercise session\n"
-            f"• `/startlive [youtube URL]` — sync a YouTube video for the group\n"
+            f"• `/startlive YT [youtube URL]` — sync a YouTube video for the group\n"
             f"Available templates: {names}"
         )
         return
@@ -400,7 +400,15 @@ def handle_start_workout(ack, command, respond):
     join_url = f"{base_url}/workout?id={session_id}"
     host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
 
-    video_id = _extract_youtube_id(text)
+    # Detect "YT <url>" prefix
+    yt_prefix = text.split(None, 1)
+    video_id = None
+    if yt_prefix[0].upper() == "YT":
+        url_part = yt_prefix[1] if len(yt_prefix) > 1 else ""
+        video_id = _extract_youtube_id(url_part)
+        if not video_id:
+            respond(":x: Please include a YouTube URL after `YT`. Example: `/startlive YT https://youtube.com/watch?v=xxxx`")
+            return
 
     if video_id:
         # ── YouTube video session ──────────────────────────────────────────
