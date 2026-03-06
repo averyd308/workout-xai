@@ -304,7 +304,7 @@ def seed_workout_templates():
             client.table("workout_templates").insert({
                 "id": t["id"],
                 "name": t["name"],
-                "exercises": json.dumps(t["exercises"]),
+                "exercises": t["exercises"],
             }).execute()
 
 
