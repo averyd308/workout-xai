@@ -475,8 +475,18 @@ function showWorkout(session, template, participants) {
 
   if (isVideo) {
     runVideoMode(session);
-  } else {
+  } else if (template) {
     runExerciseMode(session, template);
+  } else {
+    // Session has no video and no template — waiting for host to set one
+    document.getElementById('exercise-info').style.display = 'none';
+    document.getElementById('exercise-timer').style.display = 'none';
+    if (IS_HOST) {
+      const ctrlEl = document.getElementById('host-controls');
+      ctrlEl.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem"><p style="color:var(--muted);margin-bottom:1rem">No video set yet.</p><p class="text-muted">Run <code>/setvideo [YouTube URL]</code> in Slack to set a video, then the session will reset and you can press Start.</p></div>';
+      ctrlEl.style.display = 'block';
+    }
+    schedulePoll(3000);
   }
 }
 
