@@ -104,11 +104,11 @@
     /* YouTube */
     .yt-outer { margin-bottom: 0.875rem; }
     .yt-container {
-      position: relative; padding-bottom: 56.25%; height: 0;
+      position: relative; width: 100%; aspect-ratio: 16 / 9;
       background: #000; border-radius: var(--radius); overflow: hidden;
       border: 1px solid var(--border);
     }
-    #yt-player-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #yt-player-inner { width: 100%; height: 100%; display: block; }
     #yt-tap-overlay {
       position: absolute; inset: 0; background: rgba(15,15,19,0.82);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -652,10 +652,12 @@ function createYTPlayer(videoId) {
   }
   ytPlayer = new YT.Player('yt-player-inner', {
     videoId: videoId,
-    width: '100%', height: '100%',
     playerVars: { autoplay: 0, rel: 0, modestbranding: 1, playsinline: 1 },
     events: {
-      onReady: () => {
+      onReady: (event) => {
+        // Force the iframe to fill the container regardless of how YT sizes it
+        const iframe = event.target.getIframe();
+        iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none';
         ytReady = true;
         currentVideoId = videoId;
         if (serverData) syncVideo(serverData.session);
