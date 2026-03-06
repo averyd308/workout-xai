@@ -83,7 +83,12 @@ def get_post_by_ts(message_ts):
 def log_activity(user_id, activity_type, description):
     today = str(date.today())
     client = get_client()
-    if activity_type != "custom":
+    if activity_type == "live":
+        # Deduplicate per session (description holds the session ID), not per day
+        existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("activity_type", "live").eq("description", description).execute()
+        if existing.data:
+            return False
+    elif activity_type != "custom":
         existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).execute()
         if existing.data:
             return False
@@ -96,10 +101,15 @@ def log_activity(user_id, activity_type, description):
     return True
 
 
-def remove_activity(user_id, activity_type):
+def remove_activity(user_id, activity_type, description=None):
     today = str(date.today())
     client = get_client()
-    existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).order("logged_at", desc=True).limit(1).execute()
+    query = client.table("activity_logs").select("id").eq("user_id", user_id).eq("activity_type", activity_type)
+    if description:
+        query = query.eq("description", description)
+    else:
+        query = query.eq("date", today)
+    existing = query.order("logged_at", desc=True).limit(1).execute()
     if existing.data:
         client.table("activity_logs").delete().eq("id", existing.data[0]["id"]).execute()
 

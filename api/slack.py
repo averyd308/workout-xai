@@ -119,7 +119,7 @@ def handle_reaction_removed(event):
         if emoji == LIVE_EMOJI:
             session = database.get_workout_session_by_ts(event["item"]["ts"])
             if session:
-                database.remove_activity(user_id, "live")
+                database.remove_activity(user_id, "live", description=f"Live workout ({session['id']})")
         return
 
     if emoji == STRETCH_EMOJI:
