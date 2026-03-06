@@ -388,55 +388,92 @@ def handle_cancel_reminder(ack, command, respond):
 
 # ── Group Workout Commands ─────────────────────────────────────────────────────
 
+def _start_live_session(user_id, client):
+    """Create a live video session, post to channel, and DM the host. Returns host_url."""
+    session_id = secrets.token_urlsafe(8)
+    host_token = secrets.token_urlsafe(16)
+    base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
+    join_url = f"{base_url}/workout?id={session_id}"
+    host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
+
+    msg = client.chat_postMessage(
+        channel=CHANNEL_ID,
+        text=f":tv: <@{user_id}> started a group video workout! Join here: {join_url}",
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f":tv: *<@{user_id}> is starting a group video workout!*\n"
+                        f"Everyone will watch and follow along in sync.\n\n"
+                        f"<{join_url}|:arrow_right:  Click here to join the live session>"
+                    ),
+                },
+            }
+        ],
+    )
+    database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None, message_ts=msg["ts"])
+    database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
+
+    try:
+        dm = client.conversations_open(users=user_id)
+        client.chat_postMessage(
+            channel=dm["channel"]["id"],
+            text=(
+                f":crown: You started a group video session!\n"
+                f"Use this private link to control the video:\n{host_url}\n\n"
+                f"_Keep this link private — it gives you host controls._\n\n"
+                f"Set the video with `/setvideo [YouTube URL]`, then press Start."
+            ),
+        )
+    except Exception as e:
+        logging.error(f"live session DM error: {e}")
+
+    return host_url
+
+
 @bolt_app.command("/startliveyt")
-def handle_start_video_session(ack, command, respond):
+def handle_start_video_session(ack, command, client, respond):
     ack()
     try:
-        user_id = command["user_id"]
-        session_id = secrets.token_urlsafe(8)
-        host_token = secrets.token_urlsafe(16)
-        base_url = os.environ.get("APP_URL", "https://workout-xai.vercel.app")
-        join_url = f"{base_url}/workout?id={session_id}"
-        host_url = f"{base_url}/workout?id={session_id}&host_token={host_token}"
-
-        msg = bolt_app.client.chat_postMessage(
-            channel=CHANNEL_ID,
-            text=f":tv: <@{user_id}> started a group video workout! Join here: {join_url}",
-            blocks=[
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": (
-                            f":tv: *<@{user_id}> is starting a group video workout!*\n"
-                            f"Everyone will watch and follow along in sync.\n\n"
-                            f"<{join_url}|:arrow_right:  Click here to join the live session>"
-                        ),
-                    },
-                }
-            ],
-        )
-        database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=None, message_ts=msg["ts"])
-        database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
-
-        try:
-            dm = bolt_app.client.conversations_open(users=user_id)
-            bolt_app.client.chat_postMessage(
-                channel=dm["channel"]["id"],
-                text=(
-                    f":crown: You started a group video session!\n"
-                    f"Use this private link to control the video:\n{host_url}\n\n"
-                    f"_Keep this link private — it gives you host controls._\n\n"
-                    f"Set the video with `/setvideo [YouTube URL]`, then press Start."
-                ),
-            )
-        except Exception as e:
-            logging.error(f"/startliveYT DM error: {e}")
-
+        _start_live_session(command["user_id"], client)
         respond(":white_check_mark: Video session started! Use `/setvideo [YouTube URL]` to set the video, then press Start in the session.")
     except Exception as e:
-        logging.error(f"/startliveYT error: {e}")
+        logging.error(f"/startliveyt error: {e}")
         respond(f"Error: {e}")
+
+
+@bolt_app.shortcut("start_live_workout")
+def handle_start_live_shortcut(ack, shortcut, client):
+    ack()
+    try:
+        _start_live_session(shortcut["user"]["id"], client)
+        client.views_open(
+            trigger_id=shortcut["trigger_id"],
+            view={
+                "type": "modal",
+                "title": {"type": "plain_text", "text": "Session Started!"},
+                "close": {"type": "plain_text", "text": "Close"},
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": (
+                                ":tv: *Live workout session started!*\n\n"
+                                "Check your DMs for the host link.\n\n"
+                                "Next steps:\n"
+                                "1. Run `/setvideo [YouTube URL]` to set the video\n"
+                                "2. Open your host link and press *Start*"
+                            ),
+                        },
+                    }
+                ],
+            },
+        )
+    except Exception as e:
+        logging.error(f"start_live_workout shortcut error: {e}")
 
 
 @bolt_app.command("/setvideo")
