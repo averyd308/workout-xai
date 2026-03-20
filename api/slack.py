@@ -14,7 +14,7 @@ import re
 import time as _time
 
 import database
-from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input
+from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input, get_bot_user_id
 
 LIVE_EMOJI = "tv"
 
@@ -44,8 +44,11 @@ def handle_reaction_added(event):
     if event["item"]["type"] != "message":
         return
 
-    post = database.get_post_by_ts(event["item"]["ts"])
     user_id = event["user"]
+    if user_id == get_bot_user_id():
+        return
+
+    post = database.get_post_by_ts(event["item"]["ts"])
     emoji = event["reaction"]
 
     if not post:
@@ -191,7 +194,7 @@ def handle_mystats(ack, command):
 
 @bolt_app.command("/teamstats")
 def handle_teamstats(ack, command):
-    weekly = database.get_weekly_stats()
+    weekly = [(uid, c) for uid, c in database.get_weekly_stats() if uid != get_bot_user_id()]
     if not weekly:
         ack("No activity logged in the past 7 days yet. Be the first!")
         return
@@ -202,6 +205,13 @@ def handle_teamstats(ack, command):
         medal = medals[i] if i < 3 else "▪️"
         lines.append(f"{medal} <@{user_id}>: *{count}* {'activity' if count == 1 else 'activities'}")
     ack("\n".join(lines))
+
+
+def _filter_bot_rows(rows):
+    bot_id = get_bot_user_id()
+    if bot_id:
+        return [r for r in rows if r[0] != bot_id]
+    return rows
 
 
 def _build_leaderboard_text(title, rows):
@@ -228,6 +238,7 @@ def _build_leaderboard_text(title, rows):
 def handle_weekly_leaderboard(ack, respond):
     ack()
     rows, monday = database.get_weekly_leaderboard()
+    rows = _filter_bot_rows(rows)
     if not rows:
         respond({"text": "No activity logged this week yet. Be the first!", "response_type": "in_channel"})
         return
@@ -256,7 +267,7 @@ def handle_weekly_leaderboard(ack, respond):
 @bolt_app.command("/leaderboard")
 def handle_alltime_leaderboard(ack, respond):
     ack()
-    rows = database.get_alltime_leaderboard()
+    rows = _filter_bot_rows(database.get_alltime_leaderboard())
     if not rows:
         respond({"text": "No activity logged yet. Be the first!", "response_type": "in_channel"})
         return
@@ -567,6 +578,7 @@ def handle_menu_weekly_leaderboard(ack, client):
     ack()
     try:
         rows, monday = database.get_weekly_leaderboard()
+        rows = _filter_bot_rows(rows)
         if not rows:
             client.chat_postMessage(channel=CHANNEL_ID, text="No activity logged this week yet. Be the first!")
             return
@@ -590,7 +602,7 @@ def handle_menu_weekly_leaderboard(ack, client):
 def handle_menu_alltime_leaderboard(ack, client):
     ack()
     try:
-        rows = database.get_alltime_leaderboard()
+        rows = _filter_bot_rows(database.get_alltime_leaderboard())
         if not rows:
             client.chat_postMessage(channel=CHANNEL_ID, text="No activity logged yet. Be the first!")
             return

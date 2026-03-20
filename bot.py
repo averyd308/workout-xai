@@ -19,6 +19,18 @@ STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
 CUSTOM_EMOJI = "runner"
 
+_bot_user_id = None
+
+
+def get_bot_user_id():
+    global _bot_user_id
+    if _bot_user_id is None:
+        try:
+            _bot_user_id = bolt_app.client.auth_test()["user_id"]
+        except Exception:
+            pass
+    return _bot_user_id
+
 
 def post_daily_message(force=False):
     if not force and database.get_today_post():
@@ -107,6 +119,18 @@ def post_daily_message(force=False):
     )
     database.save_daily_post(today, result["ts"], CHANNEL_ID, stretch["title"], workout["title"])
     logging.info(f"Daily post sent: ts={result['ts']}")
+
+    # Auto-react with activity emojis so users can tap them directly
+    for emoji in [STRETCH_EMOJI, WORKOUT_EMOJI]:
+        try:
+            bolt_app.client.reactions_add(channel=CHANNEL_ID, timestamp=result["ts"], name=emoji)
+        except Exception as e:
+            logging.warning(f"Failed to add reaction {emoji}: {e}")
+    if custom_suggestion:
+        try:
+            bolt_app.client.reactions_add(channel=CHANNEL_ID, timestamp=result["ts"], name=CUSTOM_EMOJI)
+        except Exception as e:
+            logging.warning(f"Failed to add reaction {CUSTOM_EMOJI}: {e}")
 
 
 # ── Reminder Helpers ──────────────────────────────────────────────────────────
