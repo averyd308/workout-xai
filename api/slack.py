@@ -458,6 +458,11 @@ def _start_live_session(user_id, client, youtube_url=None, channel_id=None):
     database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=youtube_url, message_ts=msg["ts"])
     database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
 
+    try:
+        client.reactions_add(channel=CHANNEL_ID, timestamp=msg["ts"], name=LIVE_EMOJI)
+    except Exception as e:
+        logging.warning(f"Failed to add reaction {LIVE_EMOJI}: {e}")
+
     dm_note = "Press *Start* when everyone is ready!" if youtube_url else "Set the video with `/setvideo [YouTube URL]`, then press *Start*."
     try:
         client.chat_postEphemeral(
