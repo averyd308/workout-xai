@@ -5,6 +5,7 @@ import time
 import logging
 import urllib.request
 import urllib.parse
+from datetime import date
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -124,12 +125,16 @@ def strava_webhook_event():
     if not tokens:
         return "ok"
 
+    STRAVA_CHANNEL_ID = "C0AN6FGBF19"
+    STRAVA_START_DATE = date(2026, 3, 24)
+
     try:
         access_token = get_valid_access_token(tokens)
         activity = fetch_activity(access_token, activity_id)
         text = format_activity_message(activity, tokens["slack_user_id"])
-        bolt_app.client.chat_postMessage(channel=CHANNEL_ID, text=text)
-        database.log_activity(tokens["slack_user_id"], "custom", "")
+        bolt_app.client.chat_postMessage(channel=STRAVA_CHANNEL_ID, text=text)
+        if date.today() >= STRAVA_START_DATE:
+            database.log_activity(tokens["slack_user_id"], "custom", f"Strava: {activity.get('name', 'activity')}", channel_id=STRAVA_CHANNEL_ID)
     except Exception as e:
         logging.error(f"Strava webhook error: {e}")
 
