@@ -14,7 +14,7 @@ import re
 import time as _time
 
 import database
-from bot import bolt_app, CHANNEL_ID, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input, get_bot_user_id
+from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input, get_bot_user_id
 
 LIVE_EMOJI = "tv"
 
@@ -441,7 +441,7 @@ def _start_live_session(user_id, client, youtube_url=None, channel_id=None):
     post_channel = channel_id or CHANNEL_ID
 
     msg = client.chat_postMessage(
-        channel=CHANNEL_ID,
+        channel=post_channel,
         text=f":tv: <@{user_id}> started a group video workout! Join here: {join_url}",
         blocks=[
             {
@@ -458,11 +458,11 @@ def _start_live_session(user_id, client, youtube_url=None, channel_id=None):
             }
         ],
     )
-    database.create_workout_session(session_id, None, user_id, host_token, CHANNEL_ID, youtube_url=youtube_url, message_ts=msg["ts"])
-    database.finish_old_sessions_for_channel(CHANNEL_ID, session_id)
+    database.create_workout_session(session_id, None, user_id, host_token, post_channel, youtube_url=youtube_url, message_ts=msg["ts"])
+    database.finish_old_sessions_for_channel(post_channel, session_id)
 
     try:
-        client.reactions_add(channel=CHANNEL_ID, timestamp=msg["ts"], name=LIVE_EMOJI)
+        client.reactions_add(channel=post_channel, timestamp=msg["ts"], name=LIVE_EMOJI)
     except Exception as e:
         logging.warning(f"Failed to add reaction {LIVE_EMOJI}: {e}")
 
@@ -521,10 +521,10 @@ def handle_start_workout_modal(ack, view, body, client):
 
 
 @bolt_app.command("/postworkoutbutton")
-def handle_post_workout_button(ack, client, respond):
+def handle_post_workout_button(ack, command, client, respond):
     ack()
     client.chat_postMessage(
-        channel=CHANNEL_ID,
+        channel=command.get("channel_id") or CHANNEL_ID,
         text="Start a live workout session",
         blocks=[
             {
@@ -582,13 +582,14 @@ def handle_menu_my_stats(ack, body, client):
 
 
 @bolt_app.action("menu_weekly_leaderboard")
-def handle_menu_weekly_leaderboard(ack, client):
+def handle_menu_weekly_leaderboard(ack, body, client):
     ack()
+    channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
     try:
         rows, monday = database.get_weekly_leaderboard()
         rows = _filter_bot_rows(rows)
         if not rows:
-            client.chat_postMessage(channel=CHANNEL_ID, text="No activity logged this week yet. Be the first!")
+            client.chat_postMessage(channel=channel_id, text="No activity logged this week yet. Be the first!")
             return
         medals = ["🥇", "🥈", "🥉", "4.", "5."]
         today = date.today()
@@ -601,21 +602,22 @@ def handle_menu_weekly_leaderboard(ack, client):
             if live:      parts.append(f":tv: {live}")
             if custom:    parts.append(f":runner: {custom}")
             lines.append(f"{medals[i]} <@{uid}>: *{total}* total  ›  {'  •  '.join(parts) or 'no activity'}")
-        client.chat_postMessage(channel=CHANNEL_ID, text="\n".join(lines))
+        client.chat_postMessage(channel=channel_id, text="\n".join(lines))
     except Exception as e:
         logging.error(f"menu_weekly_leaderboard error: {e}")
 
 
 @bolt_app.action("menu_alltime_leaderboard")
-def handle_menu_alltime_leaderboard(ack, client):
+def handle_menu_alltime_leaderboard(ack, body, client):
     ack()
+    channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
     try:
         rows = _filter_bot_rows(database.get_alltime_leaderboard())
         if not rows:
-            client.chat_postMessage(channel=CHANNEL_ID, text="No activity logged yet. Be the first!")
+            client.chat_postMessage(channel=channel_id, text="No activity logged yet. Be the first!")
             return
         result = _build_leaderboard_text("All-Time Leaderboard", rows)
-        client.chat_postMessage(channel=CHANNEL_ID, text=result["text"])
+        client.chat_postMessage(channel=channel_id, text=result["text"])
     except Exception as e:
         logging.error(f"menu_alltime_leaderboard error: {e}")
 
@@ -741,10 +743,10 @@ def handle_set_reminder_modal(ack, view, body, client):
 
 
 @bolt_app.command("/postmenu")
-def handle_post_menu(ack, client, respond):
+def handle_post_menu(ack, command, client, respond):
     ack()
     client.chat_postMessage(
-        channel=CHANNEL_ID,
+        channel=command.get("channel_id") or CHANNEL_ID,
         text="Workout Menu",
         blocks=[
             {"type": "header", "text": {"type": "plain_text", "text": "🏋️  Periodic Gains Menu"}},
@@ -793,7 +795,7 @@ def handle_set_video(ack, command, respond):
             respond(":x: Please provide a valid YouTube URL (youtube.com/watch?v=... or youtu.be/...)")
             return
 
-        session = database.get_active_session_for_channel(CHANNEL_ID)
+        session = database.get_active_session_for_channel(command.get("channel_id") or CHANNEL_ID)
         if not session:
             respond(":x: No active session found. Start one with `/startlive [YouTube URL]`.")
             return

@@ -14,7 +14,8 @@ bolt_app = App(
     process_before_response=True,
 )
 
-CHANNEL_ID = os.environ["SLACK_CHANNEL_ID"]
+CHANNEL_IDS = [c.strip() for c in os.environ["SLACK_CHANNEL_ID"].split(",") if c.strip()]
+CHANNEL_ID = CHANNEL_IDS[0]  # primary channel; used as fallback
 STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
 CUSTOM_EMOJI = "runner"
@@ -33,8 +34,13 @@ def get_bot_user_id():
 
 
 def post_daily_message(force=False):
-    if not force and database.get_today_post(CHANNEL_ID):
-        logging.info("Daily post already sent today, skipping.")
+    for channel_id in CHANNEL_IDS:
+        _post_daily_to_channel(channel_id, force=force)
+
+
+def _post_daily_to_channel(channel_id, force=False):
+    if not force and database.get_today_post(channel_id):
+        logging.info(f"Daily post already sent today to {channel_id}, skipping.")
         return
 
     today = str(datetime.now().date())
@@ -113,22 +119,22 @@ def post_daily_message(force=False):
     ]
 
     result = bolt_app.client.chat_postMessage(
-        channel=CHANNEL_ID,
+        channel=channel_id,
         text=f"Today's movement options: {stretch['title']} or {workout['title']}",
         blocks=blocks,
     )
-    database.save_daily_post(today, result["ts"], CHANNEL_ID, stretch["title"], workout["title"])
-    logging.info(f"Daily post sent: ts={result['ts']}")
+    database.save_daily_post(today, result["ts"], channel_id, stretch["title"], workout["title"])
+    logging.info(f"Daily post sent to {channel_id}: ts={result['ts']}")
 
     # Auto-react with activity emojis so users can tap them directly
     for emoji in [STRETCH_EMOJI, WORKOUT_EMOJI]:
         try:
-            bolt_app.client.reactions_add(channel=CHANNEL_ID, timestamp=result["ts"], name=emoji)
+            bolt_app.client.reactions_add(channel=channel_id, timestamp=result["ts"], name=emoji)
         except Exception as e:
             logging.warning(f"Failed to add reaction {emoji}: {e}")
     if custom_suggestion:
         try:
-            bolt_app.client.reactions_add(channel=CHANNEL_ID, timestamp=result["ts"], name=CUSTOM_EMOJI)
+            bolt_app.client.reactions_add(channel=channel_id, timestamp=result["ts"], name=CUSTOM_EMOJI)
         except Exception as e:
             logging.warning(f"Failed to add reaction {CUSTOM_EMOJI}: {e}")
 
@@ -185,13 +191,14 @@ def parse_reminder_input(text, default_timezone):
 
 def send_reminder_dm(client, user_id):
     """DM a user reminding them to check today's workout."""
-    today_post = database.get_today_post()
+    channels_mention = " and ".join(f"<#{c}>" for c in CHANNEL_IDS)
+    today_post = database.get_today_post(CHANNEL_ID)
     if today_post:
         stretch = today_post.get("stretch_option", "today's stretch")
         workout = today_post.get("workout_option", "today's workout")
         body = (
             f":alarm_clock: *Workout reminder!*\n\n"
-            f"Don't forget to check today's movement options in <#{CHANNEL_ID}>:\n"
+            f"Don't forget to check today's movement options in {channels_mention}:\n"
             f":person_in_lotus_position: *{stretch}*\n"
             f":muscle: *{workout}*\n\n"
             f"React to the post when you're done to log your activity!"
@@ -199,7 +206,7 @@ def send_reminder_dm(client, user_id):
     else:
         body = (
             f":alarm_clock: *Workout reminder!*\n\n"
-            f"Head over to <#{CHANNEL_ID}> to check today's movement options and get moving!"
+            f"Head over to {channels_mention} to check today's movement options and get moving!"
         )
     try:
         dm = client.conversations_open(users=user_id)
