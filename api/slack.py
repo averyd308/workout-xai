@@ -346,10 +346,10 @@ def handle_set_header(ack, command, respond):
 
 
 @bolt_app.command("/postdaily")
-def handle_post_daily(ack, respond):
+def handle_post_daily(ack, command, respond):
     ack()
     try:
-        post_daily_message(force=True)
+        post_daily_message(channel_id=command.get("channel_id"), force=True)
         respond(":white_check_mark: Daily workout posted!")
     except Exception as e:
         logging.error(f"/postdaily error: {e}")

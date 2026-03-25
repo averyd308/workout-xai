@@ -33,9 +33,8 @@ def get_bot_user_id():
     return _bot_user_id
 
 
-def post_daily_message(force=False):
-    for channel_id in CHANNEL_IDS:
-        _post_daily_to_channel(channel_id, force=force)
+def post_daily_message(channel_id=None, force=False):
+    _post_daily_to_channel(channel_id or CHANNEL_ID, force=force)
 
 
 def _post_daily_to_channel(channel_id, force=False):
