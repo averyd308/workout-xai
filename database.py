@@ -83,7 +83,7 @@ def get_post_by_ts(message_ts):
     return result.data[0] if result.data else None
 
 
-def log_activity(user_id, activity_type, description):
+def log_activity(user_id, activity_type, description, channel_id=None):
     today = str(date.today())
     client = get_client()
     if activity_type == "live":
@@ -95,12 +95,15 @@ def log_activity(user_id, activity_type, description):
         existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).execute()
         if existing.data:
             return False
-    client.table("activity_logs").insert({
+    row = {
         "user_id": user_id,
         "date": today,
         "activity_type": activity_type,
         "description": description,
-    }).execute()
+    }
+    if channel_id:
+        row["channel_id"] = channel_id
+    client.table("activity_logs").insert(row).execute()
     return True
 
 
@@ -117,8 +120,11 @@ def remove_activity(user_id, activity_type, description=None):
         client.table("activity_logs").delete().eq("id", existing.data[0]["id"]).execute()
 
 
-def get_user_stats(user_id):
-    result = get_client().table("activity_logs").select("activity_type").eq("user_id", user_id).execute()
+def get_user_stats(user_id, channel_id=None):
+    query = get_client().table("activity_logs").select("activity_type").eq("user_id", user_id)
+    if channel_id:
+        query = query.eq("channel_id", channel_id)
+    result = query.execute()
     stats = {}
     for row in result.data:
         t = row["activity_type"]

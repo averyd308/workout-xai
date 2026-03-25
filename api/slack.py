@@ -55,57 +55,59 @@ def handle_reaction_added(event):
         if emoji == LIVE_EMOJI:
             session = database.get_workout_session_by_ts(event["item"]["ts"])
             if session:
-                logged = database.log_activity(user_id, "live", f"Live workout ({session['id']})")
+                ch = session["channel_id"]
+                logged = database.log_activity(user_id, "live", f"Live workout ({session['id']})", channel_id=ch)
                 if logged:
-                    stats = database.get_user_stats(user_id)
+                    stats = database.get_user_stats(user_id, channel_id=ch)
                     count = stats.get("live", 0)
                     bolt_app.client.chat_postEphemeral(
-                        channel=session["channel_id"],
+                        channel=ch,
                         user=user_id,
-                        text=f":tv: Logged! You've joined *{count}* live workout{'s' if count != 1 else ''} total.",
+                        text=f":tv: Logged! You've joined *{count}* live workout{'s' if count != 1 else ''} in this channel.",
                     )
         return
 
+    post_channel = post.get("channel_id") or CHANNEL_ID
     stretch_title = post["stretch_option"]
     workout_title = post["workout_option"]
 
     if emoji == STRETCH_EMOJI:
-        logged = database.log_activity(user_id, "stretch", stretch_title)
+        logged = database.log_activity(user_id, "stretch", stretch_title, channel_id=post_channel)
         if logged:
-            stats = database.get_user_stats(user_id)
+            stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("stretch", 0)
             bolt_app.client.chat_postEphemeral(
-                channel=CHANNEL_ID,
+                channel=post_channel,
                 user=user_id,
-                text=f":person_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} total.",
+                text=f":person_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} in this channel.",
             )
 
     elif emoji == WORKOUT_EMOJI:
-        logged = database.log_activity(user_id, "workout", workout_title)
+        logged = database.log_activity(user_id, "workout", workout_title, channel_id=post_channel)
         if logged:
-            stats = database.get_user_stats(user_id)
+            stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("workout", 0)
             bolt_app.client.chat_postEphemeral(
-                channel=CHANNEL_ID,
+                channel=post_channel,
                 user=user_id,
-                text=f":muscle: Great workout! You've logged *{count}* workout{'s' if count != 1 else ''} total.",
+                text=f":muscle: Great workout! You've logged *{count}* workout{'s' if count != 1 else ''} in this channel.",
             )
 
     elif emoji == CUSTOM_EMOJI:
         scheduled = database.get_scheduled_options(post["date"])
         custom_title = scheduled[4] if scheduled and scheduled[4] else None
         if custom_title:
-            logged = database.log_activity(user_id, "custom", "")
+            logged = database.log_activity(user_id, "custom", "", channel_id=post_channel)
             if logged:
                 from datetime import datetime as dt
                 d = dt.strptime(post["date"], "%Y-%m-%d")
                 date_display = f"{d.strftime('%b')} {d.day}"
-                stats = database.get_user_stats(user_id)
+                stats = database.get_user_stats(user_id, channel_id=post_channel)
                 count = stats.get("custom", 0)
                 bolt_app.client.chat_postEphemeral(
-                    channel=CHANNEL_ID,
+                    channel=post_channel,
                     user=user_id,
-                    text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} total.",
+                    text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} in this channel.",
                 )
 
 
@@ -167,12 +169,13 @@ def handle_workout(ack, command):
 @bolt_app.command("/userstats")
 def handle_mystats(ack, command):
     try:
-        stats = database.get_user_stats(command["user_id"])
+        channel_id = command.get("channel_id") or CHANNEL_ID
+        stats = database.get_user_stats(command["user_id"], channel_id=channel_id)
     except Exception as e:
         ack(f"DB error: {e}")
         return
     if not stats:
-        ack("You haven't logged anything yet! React to today's post or use `/workout` to get started.")
+        ack("You haven't logged anything yet in this channel! React to today's post or use `/workout` to get started.")
         return
 
     stretch = stats.get("stretch", 0)
@@ -181,7 +184,7 @@ def handle_mystats(ack, command):
     live = stats.get("live", 0)
     total = sum(stats.values())
     lines = [
-        "*Your activity stats (all time):*",
+        "*Your activity stats (this channel):*",
         f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
         f":muscle:  Workouts: *{workout}*",
         f":tv:  Live workouts: *{live}*",
@@ -555,10 +558,10 @@ def handle_menu_my_stats(ack, body, client):
     user_id = body["user"]["id"]
     channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
     try:
-        stats = database.get_user_stats(user_id)
+        stats = database.get_user_stats(user_id, channel_id=channel_id)
         if not stats:
             client.chat_postEphemeral(channel=channel_id, user=user_id,
-                text="You haven't logged anything yet! React to today's post or use the Log Workout button.")
+                text="You haven't logged anything yet in this channel! React to today's post or use the Log Workout button.")
             return
         stretch = stats.get("stretch", 0)
         workout = stats.get("workout", 0)
@@ -566,7 +569,7 @@ def handle_menu_my_stats(ack, body, client):
         live    = stats.get("live", 0)
         total   = sum(stats.values())
         client.chat_postEphemeral(channel=channel_id, user=user_id, text=(
-            "*Your activity stats (all time):*\n"
+            "*Your activity stats (this channel):*\n"
             f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
             f":muscle:  Workouts: *{workout}*\n"
             f":tv:  Live workouts: *{live}*\n"
