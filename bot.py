@@ -33,7 +33,7 @@ def get_bot_user_id():
 
 
 def post_daily_message(force=False):
-    if not force and database.get_today_post():
+    if not force and database.get_today_post(CHANNEL_ID):
         logging.info("Daily post already sent today, skipping.")
         return
 
