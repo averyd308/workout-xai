@@ -91,6 +91,13 @@ def log_activity(user_id, activity_type, description, channel_id=None):
         existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("activity_type", "live").eq("description", description).execute()
         if existing.data:
             return False
+    elif activity_type == "custom" and description == "":
+        # Reaction-logged customs (blank description) dedup by date + channel
+        query = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", "custom").eq("description", "")
+        if channel_id:
+            query = query.eq("channel_id", channel_id)
+        if query.execute().data:
+            return False
     elif activity_type != "custom":
         existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).execute()
         if existing.data:
