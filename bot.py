@@ -121,6 +121,8 @@ def _post_daily_to_channel(channel_id, force=False):
         channel=channel_id,
         text=f"Today's movement options: {stretch['title']} or {workout['title']}",
         blocks=blocks,
+        unfurl_links=False,
+        unfurl_media=False,
     )
     database.save_daily_post(today, result["ts"], channel_id, stretch["title"], workout["title"])
     logging.info(f"Daily post sent to {channel_id}: ts={result['ts']}")
