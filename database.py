@@ -98,6 +98,11 @@ def log_activity(user_id, activity_type, description, channel_id=None):
             query = query.eq("channel_id", channel_id)
         if query.execute().data:
             return False
+    elif activity_type == "custom" and description != "":
+        # Dedup by exact description (Strava activity IDs are embedded in the description)
+        query = client.table("activity_logs").select("id").eq("user_id", user_id).eq("activity_type", "custom").eq("description", description)
+        if query.execute().data:
+            return False
     elif activity_type != "custom":
         existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).execute()
         if existing.data:
