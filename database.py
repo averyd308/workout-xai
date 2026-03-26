@@ -260,6 +260,11 @@ def get_strava_tokens_by_athlete(athlete_id):
     return result.data[0] if result.data else None
 
 
+def strava_activity_already_logged(slack_user_id, description):
+    result = get_client().table("activity_logs").select("id").eq("user_id", slack_user_id).eq("activity_type", "custom").eq("description", description).execute()
+    return bool(result.data)
+
+
 def delete_strava_tokens(slack_user_id):
     get_client().table("strava_tokens").delete().eq("slack_user_id", slack_user_id).execute()
 

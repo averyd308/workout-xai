@@ -131,10 +131,13 @@ def strava_webhook_event():
     try:
         access_token = get_valid_access_token(tokens)
         activity = fetch_activity(access_token, activity_id)
+        description = f"Strava: {activity.get('name', 'activity')} [{activity_id}]"
+        if database.strava_activity_already_logged(tokens["slack_user_id"], description):
+            return "ok"
         text = format_activity_message(activity, tokens["slack_user_id"])
         bolt_app.client.chat_postMessage(channel=STRAVA_CHANNEL_ID, text=text)
         if date.today() >= STRAVA_START_DATE:
-            database.log_activity(tokens["slack_user_id"], "custom", f"Strava: {activity.get('name', 'activity')} [{activity_id}]", channel_id=STRAVA_CHANNEL_ID)
+            database.log_activity(tokens["slack_user_id"], "custom", description, channel_id=STRAVA_CHANNEL_ID)
     except Exception as e:
         logging.error(f"Strava webhook error: {e}")
 
