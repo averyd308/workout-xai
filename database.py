@@ -162,7 +162,7 @@ def get_weekly_stats():
 
 def get_weekly_leaderboard():
     today = date.today()
-    monday = today - timedelta(days=today.weekday())
+    monday = today - timedelta(days=6)
     result = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(monday)).execute()
     stats = {}
     for row in result.data:
