@@ -26,6 +26,7 @@ TIMEZONE = os.environ.get("TIMEZONE", "America/New_York")
 
 STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
+GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
 
 
 # ── Daily Post ────────────────────────────────────────────────────────────────
@@ -133,6 +134,17 @@ def handle_reaction_added(event):
                 text=f":muscle: Great workout! You've logged *{count}* workout{'s' if count != 1 else ''} total.",
             )
 
+    elif emoji in GYM_EMOJIS:
+        logged = database.log_activity(user_id, "gym", "Gym workout")
+        if logged:
+            stats = database.get_user_stats(user_id)
+            count = stats.get("gym", 0)
+            app.client.chat_postEphemeral(
+                channel=CHANNEL_ID,
+                user=user_id,
+                text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} total.",
+            )
+
 
 @app.event("reaction_removed")
 def handle_reaction_removed(event):
@@ -150,6 +162,8 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "stretch")
     elif emoji == WORKOUT_EMOJI:
         database.remove_activity(user_id, "workout")
+    elif emoji in GYM_EMOJIS:
+        database.remove_activity(user_id, "gym")
 
 
 # ── Slash Commands ────────────────────────────────────────────────────────────
@@ -183,6 +197,7 @@ def handle_mystats(ack, command, respond):
 
     stretch = stats.get("stretch", 0)
     workout = stats.get("workout", 0)
+    gym = stats.get("gym", 0)
     custom = stats.get("custom", 0)
     total = sum(stats.values())
 
@@ -190,6 +205,7 @@ def handle_mystats(ack, command, respond):
         f"*Your activity stats (all time):*\n"
         f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
         f":muscle:  Workouts: *{workout}*\n"
+        f":man-lifting-weights:  Gym sessions: *{gym}*\n"
         f":running:  Custom activities: *{custom}*\n"
         f"─────────────────────\n"
         f"Total: *{total}* activities"

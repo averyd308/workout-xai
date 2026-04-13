@@ -168,11 +168,11 @@ def get_weekly_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0, "live": 0}
+            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0}
         t = row["activity_type"]
         if t in stats[uid]:
             stats[uid][t] += 1
-    rows = sorted([(uid, s["stretch"], s["workout"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4], reverse=True)
+    rows = sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4] + x[5], reverse=True)
     return rows, monday
 
 
@@ -188,11 +188,11 @@ def get_alltime_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "custom": 0, "live": 0}
+            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0}
         t = row["activity_type"]
         if t in stats[uid]:
             stats[uid][t] += 1
-    return sorted([(uid, s["stretch"], s["workout"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4], reverse=True)
+    return sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4] + x[5], reverse=True)
 
 
 def get_setting(key, default=None):

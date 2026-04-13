@@ -14,7 +14,7 @@ import re
 import time as _time
 
 import database
-from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, post_daily_message, parse_reminder_input, get_bot_user_id
+from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, GYM_EMOJIS, post_daily_message, parse_reminder_input, get_bot_user_id
 
 LIVE_EMOJI = "tv"
 
@@ -110,6 +110,17 @@ def handle_reaction_added(event):
                     text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} in this channel.",
                 )
 
+    elif emoji in GYM_EMOJIS:
+        logged = database.log_activity(user_id, "gym", "Gym workout", channel_id=post_channel)
+        if logged:
+            stats = database.get_user_stats(user_id, channel_id=post_channel)
+            count = stats.get("gym", 0)
+            bolt_app.client.chat_postEphemeral(
+                channel=post_channel,
+                user=user_id,
+                text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} in this channel.",
+            )
+
 
 @bolt_app.event("reaction_removed")
 def handle_reaction_removed(event):
@@ -133,6 +144,8 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "workout")
     elif emoji == CUSTOM_EMOJI:
         database.remove_activity(user_id, "custom")
+    elif emoji in GYM_EMOJIS:
+        database.remove_activity(user_id, "gym")
 
 
 # ── Slash Commands ─────────────────────────────────────────────────────────────
@@ -180,6 +193,7 @@ def handle_mystats(ack, command):
 
     stretch = stats.get("stretch", 0)
     workout = stats.get("workout", 0)
+    gym = stats.get("gym", 0)
     custom = stats.get("custom", 0)
     live = stats.get("live", 0)
     total = sum(stats.values())
@@ -187,6 +201,7 @@ def handle_mystats(ack, command):
         "*Your activity stats (this channel):*",
         f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
         f":muscle:  Workouts: *{workout}*",
+        f":man-lifting-weights:  Gym sessions: *{gym}*",
         f":tv:  Live workouts: *{live}*",
         f":runner:  Custom activities: *{custom}*",
         "─────────────────────",
@@ -220,14 +235,16 @@ def _filter_bot_rows(rows):
 def _build_leaderboard_text(title, rows):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
-    for i, (user_id, stretches, workouts, custom, live) in enumerate(rows):
-        total = stretches + workouts + custom + live
+    for i, (user_id, stretches, workouts, gym, custom, live) in enumerate(rows):
+        total = stretches + workouts + gym + custom + live
         medal = medals[i] if i < 3 else f"{i + 1}."
         parts = []
         if stretches:
             parts.append(f":person_in_lotus_position: {stretches}")
         if workouts:
             parts.append(f":muscle: {workouts}")
+        if gym:
+            parts.append(f":man-lifting-weights: {gym}")
         if live:
             parts.append(f":tv: {live}")
         if custom:
@@ -250,14 +267,16 @@ def handle_weekly_leaderboard(ack, respond):
     today = date.today()
     title = f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*"
     lines = [title, ""]
-    for i, (user_id, stretches, workouts, custom, live) in enumerate(rows[:5]):
-        total = stretches + workouts + custom + live
+    for i, (user_id, stretches, workouts, gym, custom, live) in enumerate(rows[:5]):
+        total = stretches + workouts + gym + custom + live
         medal = medals[i]
         parts = []
         if stretches:
             parts.append(f":person_in_lotus_position: {stretches}")
         if workouts:
             parts.append(f":muscle: {workouts}")
+        if gym:
+            parts.append(f":man-lifting-weights: {gym}")
         if live:
             parts.append(f":tv: {live}")
         if custom:
