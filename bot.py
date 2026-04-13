@@ -19,6 +19,7 @@ CHANNEL_ID = CHANNEL_IDS[0]  # primary channel; used as fallback
 STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
 CUSTOM_EMOJI = "runner"
+GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
 
 _bot_user_id = None
 
@@ -107,6 +108,17 @@ def _post_daily_to_channel(channel_id, force=False):
     blocks += [
         {"type": "divider"},
         {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    ":man-lifting-weights: :woman-lifting-weights:  *Hit the gym?*\n"
+                    "→ React with :man-lifting-weights: or :woman-lifting-weights: if you did a gym workout today"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
             "type": "context",
             "elements": [
                 {
@@ -138,6 +150,11 @@ def _post_daily_to_channel(channel_id, force=False):
             bolt_app.client.reactions_add(channel=channel_id, timestamp=result["ts"], name=CUSTOM_EMOJI)
         except Exception as e:
             logging.warning(f"Failed to add reaction {CUSTOM_EMOJI}: {e}")
+    for emoji in GYM_EMOJIS:
+        try:
+            bolt_app.client.reactions_add(channel=channel_id, timestamp=result["ts"], name=emoji)
+        except Exception as e:
+            logging.warning(f"Failed to add reaction {emoji}: {e}")
 
 
 # ── Reminder Helpers ──────────────────────────────────────────────────────────

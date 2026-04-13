@@ -237,7 +237,7 @@ def _build_leaderboard_text(title, rows):
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
 
 
-@bolt_app.command("/weeklyleaderboard")
+@bolt_app.command("/pg-weeklyleaderboard")
 def handle_weekly_leaderboard(ack, respond):
     ack()
     rows, monday = database.get_weekly_leaderboard()
@@ -267,7 +267,7 @@ def handle_weekly_leaderboard(ack, respond):
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 
-@bolt_app.command("/leaderboard")
+@bolt_app.command("/pg-leaderboard")
 def handle_alltime_leaderboard(ack, respond):
     ack()
     rows = _filter_bot_rows(database.get_alltime_leaderboard())

@@ -231,7 +231,7 @@ def _build_leaderboard_blocks(title, rows):
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
 
 
-@app.command("/weeklyleaderboard")
+@app.command("/pg-weeklyleaderboard")
 def handle_weekly_leaderboard(ack, respond):
     ack()
     rows, monday = database.get_weekly_leaderboard()
@@ -260,7 +260,7 @@ def handle_weekly_leaderboard(ack, respond):
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 
-@app.command("/leaderboard")
+@app.command("/pg-leaderboard")
 def handle_alltime_leaderboard(ack, respond):
     ack()
     rows = database.get_alltime_leaderboard()
