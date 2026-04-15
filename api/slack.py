@@ -121,6 +121,17 @@ def handle_reaction_added(event):
                 text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} in this channel.",
             )
 
+    else:
+        logged = database.log_activity(user_id, "other", f":{emoji}:", channel_id=post_channel)
+        if logged:
+            stats = database.get_user_stats(user_id, channel_id=post_channel)
+            count = stats.get("other", 0)
+            bolt_app.client.chat_postEphemeral(
+                channel=post_channel,
+                user=user_id,
+                text=f":{emoji}: Activity logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel.",
+            )
+
 
 @bolt_app.event("reaction_removed")
 def handle_reaction_removed(event):
@@ -146,6 +157,8 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "custom")
     elif emoji in GYM_EMOJIS:
         database.remove_activity(user_id, "gym")
+    else:
+        database.remove_activity(user_id, "other", description=f":{emoji}:")
 
 
 # ── Slash Commands ─────────────────────────────────────────────────────────────
@@ -236,8 +249,8 @@ def _filter_bot_rows(rows):
 def _build_leaderboard_text(title, rows):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
-    for i, (user_id, stretches, workouts, gym, custom, live) in enumerate(rows):
-        total = stretches + workouts + gym + custom + live
+    for i, (user_id, stretches, workouts, gym, custom, live, other) in enumerate(rows):
+        total = stretches + workouts + gym + custom + live + other
         medal = medals[i] if i < 3 else f"{i + 1}."
         parts = []
         if stretches:
@@ -250,6 +263,8 @@ def _build_leaderboard_text(title, rows):
             parts.append(f":tv: {live}")
         if custom:
             parts.append(f":runner: {custom}")
+        if other:
+            parts.append(f":zap: {other}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
@@ -258,18 +273,17 @@ def _build_leaderboard_text(title, rows):
 @bolt_app.command("/pg-weeklyleaderboard")
 def handle_weekly_leaderboard(ack, respond):
     ack()
-    rows, monday = database.get_weekly_leaderboard()
+    rows, sunday, saturday = database.get_weekly_leaderboard()
     rows = _filter_bot_rows(rows)
     if not rows:
-        respond({"text": "No activity logged this week yet. Be the first!", "response_type": "in_channel"})
+        respond({"text": f"No activity logged this week yet ({sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}). Be the first!", "response_type": "in_channel"})
         return
 
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
-    today = date.today()
-    title = f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*"
+    title = f"*Weekly Leaderboard  •  {sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}*"
     lines = [title, ""]
-    for i, (user_id, stretches, workouts, gym, custom, live) in enumerate(rows[:5]):
-        total = stretches + workouts + gym + custom + live
+    for i, (user_id, stretches, workouts, gym, custom, live, other) in enumerate(rows[:5]):
+        total = stretches + workouts + gym + custom + live + other
         medal = medals[i]
         parts = []
         if stretches:
@@ -282,6 +296,8 @@ def handle_weekly_leaderboard(ack, respond):
             parts.append(f":tv: {live}")
         if custom:
             parts.append(f":runner: {custom}")
+        if other:
+            parts.append(f":zap: {other}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
     respond({"text": "\n".join(lines), "response_type": "in_channel"})

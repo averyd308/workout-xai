@@ -119,6 +119,14 @@ def _post_daily_to_channel(channel_id, force=False):
         },
         {"type": "divider"},
         {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": ":zap:  *Did something else?*\nReact with any emoji that represents your workout to track it — a swim :swimmer:, a bike ride :bicyclist:, a hike :mountain_snow:, whatever fits!",
+            },
+        },
+        {"type": "divider"},
+        {
             "type": "context",
             "elements": [
                 {

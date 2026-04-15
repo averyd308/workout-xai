@@ -103,6 +103,11 @@ def log_activity(user_id, activity_type, description, channel_id=None):
         query = client.table("activity_logs").select("id").eq("user_id", user_id).eq("activity_type", "custom").eq("description", description)
         if query.execute().data:
             return False
+    elif activity_type == "other":
+        # Deduplicate per emoji (description) per day
+        existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", "other").eq("description", description).execute()
+        if existing.data:
+            return False
     elif activity_type != "custom":
         existing = client.table("activity_logs").select("id").eq("user_id", user_id).eq("date", today).eq("activity_type", activity_type).execute()
         if existing.data:
@@ -162,18 +167,19 @@ def get_weekly_stats():
 
 def get_weekly_leaderboard():
     today = date.today()
-    monday = today - timedelta(days=6)
-    result = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(monday)).execute()
+    sunday = today - timedelta(days=(today.weekday() + 1) % 7)
+    saturday = sunday + timedelta(days=6)
+    result = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(sunday)).execute()
     stats = {}
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0}
+            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0, "other": 0}
         t = row["activity_type"]
         if t in stats[uid]:
             stats[uid][t] += 1
-    rows = sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4] + x[5], reverse=True)
-    return rows, monday
+    rows = sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"], s["other"]) for uid, s in stats.items()], key=lambda x: sum(x[1:]), reverse=True)
+    return rows, sunday, saturday
 
 
 def get_weekly_custom_logs(user_id, since_date):
@@ -188,11 +194,11 @@ def get_alltime_leaderboard():
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0}
+            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0, "other": 0}
         t = row["activity_type"]
         if t in stats[uid]:
             stats[uid][t] += 1
-    return sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"]) for uid, s in stats.items()], key=lambda x: x[1] + x[2] + x[3] + x[4] + x[5], reverse=True)
+    return sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"], s["other"]) for uid, s in stats.items()], key=lambda x: sum(x[1:]), reverse=True)
 
 
 def get_setting(key, default=None):
