@@ -275,7 +275,27 @@ def _build_leaderboard_text(title, rows):
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
 
 
-_CHANNEL_MENTION_RE = re.compile(r"<#([A-Z0-9]+)(?:\|[^>]*)?>")
+_CHANNEL_MENTION_RE = re.compile(r"<#([A-Z0-9]+)(?:\|[^>]*)?>|#(\S+)")
+
+def _resolve_channel_name(name):
+    """Look up a channel ID by name. Returns ID or None."""
+    name = name.lstrip("#").lower()
+    try:
+        cursor = None
+        while True:
+            kwargs = {"types": "public_channel,private_channel", "exclude_archived": True, "limit": 200}
+            if cursor:
+                kwargs["cursor"] = cursor
+            resp = bolt_app.client.conversations_list(**kwargs)
+            for ch in resp.get("channels", []):
+                if ch["name"].lower() == name:
+                    return ch["id"]
+            cursor = resp.get("response_metadata", {}).get("next_cursor")
+            if not cursor:
+                break
+    except Exception:
+        pass
+    return None
 
 def _parse_leaderboard_args(text):
     """Parse optional channel mention and date from command text.
@@ -283,11 +303,14 @@ def _parse_leaderboard_args(text):
     """
     from datetime import datetime as dt
 
-    # Extract channel mention if present, e.g. <#C0AN6FGBF19|general>
+    # Extract channel mention — handles both <#CID|name> and #channel-name
     channel_id = None
     m = _CHANNEL_MENTION_RE.search(text)
     if m:
-        channel_id = m.group(1)
+        if m.group(1):
+            channel_id = m.group(1)
+        else:
+            channel_id = _resolve_channel_name(m.group(2))
         text = _CHANNEL_MENTION_RE.sub("", text).strip()
 
     # Parse remaining text as a date
