@@ -29,7 +29,7 @@ def daily_cron():
 def weekly_leaderboard_cron():
     if os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
         return "Unauthorized", 401
-    post_weekly_leaderboard()
+    post_weekly_leaderboard(channel_id="C0AN6FGBF19")
     return "ok"
 
 
