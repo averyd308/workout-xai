@@ -177,8 +177,9 @@ def handle_workout(ack, command, respond):
         return
 
     user_id = command["user_id"]
-    database.log_activity(user_id, "custom", description)
-    stats = database.get_user_stats(user_id)
+    channel_id = command.get("channel_id")
+    database.log_activity(user_id, "custom", description, channel_id=channel_id)
+    stats = database.get_user_stats(user_id, channel_id=channel_id)
     total = sum(stats.values())
     custom = stats.get("custom", 0)
     respond(
