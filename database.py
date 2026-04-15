@@ -88,8 +88,8 @@ def get_post_by_ts(message_ts):
     return result.data[0] if result.data else None
 
 
-def log_activity(user_id, activity_type, description, channel_id=None):
-    today = str(date.today())
+def log_activity(user_id, activity_type, description, channel_id=None, date_str=None):
+    today = date_str or str(date.today())
     client = get_client()
     if activity_type == "live":
         # Deduplicate per session (description holds the session ID), not per day

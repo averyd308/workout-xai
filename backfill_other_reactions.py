@@ -14,11 +14,22 @@ import logging
 from slack_sdk import WebClient
 
 import database
-from bot import STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-SKIP_EMOJIS = {STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, "tv"} | set(GYM_EMOJIS)
+SKIP_EMOJIS = {"person_in_lotus_position", "muscle", "runner", "man-lifting-weights", "woman-lifting-weights", "tv"}
+
+OTHER_ACTIVITY_EMOJIS = {
+    "bike", "bicyclist", "mountain_bicyclist",
+    "swimmer", "surfer", "rowing",
+    "skier", "snowboarder", "person_climbing", "mountain_snow", "hiking_boot",
+    "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
+    "badminton", "ping_pong",
+    "boxing_glove", "martial_arts_uniform", "person_fencing",
+    "dancer", "man_dancing",
+    "golf",
+    "athletic_shoe", "trophy", "sports_medal", "medal_sports",
+}
 
 def get_bot_user_id(client):
     return client.auth_test()["user_id"]
@@ -69,7 +80,7 @@ def main():
                     continue
 
                 logged = database.log_activity(
-                    user_id, "other", f":{emoji}:", channel_id=channel_id
+                    user_id, "other", f":{emoji}:", channel_id=channel_id, date_str=post_date
                 )
                 if logged:
                     total_logged += 1
