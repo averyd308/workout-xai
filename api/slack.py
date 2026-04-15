@@ -170,29 +170,6 @@ def handle_ping(ack, respond):
     respond("pong!")
 
 
-@bolt_app.command("/workout")
-def handle_workout(ack, command):
-    try:
-        description = command["text"].strip()
-        if not description:
-            ack("Please describe your workout. Example: `/workout 30 min run`")
-            return
-
-        user_id = command["user_id"]
-        channel_id = command.get("channel_id")
-        database.log_activity(user_id, "custom", description, channel_id=channel_id)
-        stats = database.get_user_stats(user_id, channel_id=channel_id)
-        total = sum(stats.values())
-        custom = stats.get("custom", 0)
-        ack(
-            f":white_check_mark: Logged: _{description}_\n"
-            f"Custom activities: *{custom}*  •  Total logged: *{total}*"
-        )
-    except Exception as e:
-        logging.error(f"/workout error: {e}")
-        ack(f"Error: {e}")
-
-
 @bolt_app.command("/userstats")
 def handle_mystats(ack, command):
     try:

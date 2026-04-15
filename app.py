@@ -168,26 +168,6 @@ def handle_reaction_removed(event):
 
 # ── Slash Commands ────────────────────────────────────────────────────────────
 
-@app.command("/workout")
-def handle_workout(ack, command, respond):
-    ack()
-    description = command["text"].strip()
-    if not description:
-        respond("Please describe your workout. Example: `/workout 30 min run`")
-        return
-
-    user_id = command["user_id"]
-    channel_id = command.get("channel_id")
-    database.log_activity(user_id, "custom", description, channel_id=channel_id)
-    stats = database.get_user_stats(user_id, channel_id=channel_id)
-    total = sum(stats.values())
-    custom = stats.get("custom", 0)
-    respond(
-        f":white_check_mark: Logged: _{description}_\n"
-        f"Custom activities: *{custom}*  •  Total logged: *{total}*"
-    )
-
-
 @app.command("/userstats")
 def handle_mystats(ack, command, respond):
     ack()

@@ -154,7 +154,7 @@ def _post_daily_to_channel(channel_id, force=False):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Did a separate workout? Don't forget to log it with `/workout [description]`  •  Check your stats with `/userstats`",
+                    "text": "Check your stats with `/userstats`",
                 }
             ],
         },
