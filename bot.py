@@ -188,6 +188,65 @@ def _post_daily_to_channel(channel_id, force=False):
             logging.warning(f"Failed to add reaction {emoji}: {e}")
 
 
+# ── Weekly Leaderboard Auto-Post ─────────────────────────────────────────────
+
+def post_weekly_leaderboard(channel_id=None):
+    """Post last week's leaderboard to the given channel (or all CHANNEL_IDS)."""
+    from datetime import date, timedelta
+    channels = [channel_id] if channel_id else CHANNEL_IDS
+
+    last_week = date.today() - timedelta(days=7)
+    sunday = last_week - timedelta(days=(last_week.weekday() + 1) % 7)
+    saturday = sunday + timedelta(days=6)
+    date_range = f"{sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}"
+
+    bot_id = get_bot_user_id()
+    medals = ["🥇", "🥈", "🥉", "4.", "5."]
+
+    for ch in channels:
+        try:
+            rows, _, _ = database.get_weekly_leaderboard(channel_id=ch, reference_date=last_week)
+            rows = [r for r in rows if r[0] != bot_id]
+            if not rows:
+                bolt_app.client.chat_postMessage(
+                    channel=ch,
+                    text=f"*Weekly Leaderboard  •  {date_range}*\n\nNo activity logged last week.",
+                )
+                continue
+
+            lines = [f"*Weekly Leaderboard  •  {date_range}*", ""]
+            for i, (uid, stretches, workouts, gym, custom, live, other) in enumerate(rows[:5]):
+                other_total = sum(other.values()) if isinstance(other, dict) else other
+                total = stretches + workouts + gym + custom + live + other_total
+                medal = medals[i] if i < len(medals) else f"{i + 1}."
+                parts = []
+                if stretches:
+                    parts.append(f":person_in_lotus_position: {stretches}")
+                if workouts:
+                    parts.append(f":muscle: {workouts}")
+                if gym:
+                    parts.append(f":man-lifting-weights: {gym}")
+                if live:
+                    parts.append(f":tv: {live}")
+                if custom:
+                    parts.append(f":runner: {custom}")
+                if isinstance(other, dict):
+                    for emoji, count in other.items():
+                        parts.append(f"{emoji} {count}")
+                elif other:
+                    parts.append(f":zap: {other}")
+                detail = "  •  ".join(parts) if parts else "no activity"
+                lines.append(f"{medal} <@{uid}>: *{total}* total  ›  {detail}")
+
+            bolt_app.client.chat_postMessage(
+                channel=ch,
+                text="\n".join(lines),
+            )
+            logging.info(f"Posted weekly leaderboard to {ch} for {date_range}")
+        except Exception as e:
+            logging.error(f"Failed to post weekly leaderboard to {ch}: {e}")
+
+
 # ── Reminder Helpers ──────────────────────────────────────────────────────────
 
 TZ_ALIASES = {

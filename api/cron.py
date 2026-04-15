@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from flask import Flask, request
 
 import database
-from bot import post_daily_message, send_pending_reminders
+from bot import post_daily_message, post_weekly_leaderboard, send_pending_reminders
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -22,6 +22,14 @@ def daily_cron():
     if os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
         return "Unauthorized", 401
     post_daily_message()
+    return "ok"
+
+
+@flask_app.route("/api/weekly-leaderboard", methods=["GET", "POST"])
+def weekly_leaderboard_cron():
+    if os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
+        return "Unauthorized", 401
+    post_weekly_leaderboard()
     return "ok"
 
 
