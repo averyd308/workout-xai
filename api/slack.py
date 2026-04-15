@@ -251,7 +251,8 @@ def _build_leaderboard_text(title, rows):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
     for i, (user_id, stretches, workouts, gym, custom, live, other) in enumerate(rows):
-        total = stretches + workouts + gym + custom + live + other
+        other_total = sum(other.values()) if isinstance(other, dict) else other
+        total = stretches + workouts + gym + custom + live + other_total
         medal = medals[i] if i < 3 else f"{i + 1}."
         parts = []
         if stretches:
@@ -264,7 +265,10 @@ def _build_leaderboard_text(title, rows):
             parts.append(f":tv: {live}")
         if custom:
             parts.append(f":runner: {custom}")
-        if other:
+        if isinstance(other, dict):
+            for emoji, count in other.items():
+                parts.append(f"{emoji} {count}")
+        elif other:
             parts.append(f":zap: {other}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
@@ -285,7 +289,8 @@ def handle_weekly_leaderboard(ack, command, respond):
     title = f"*Weekly Leaderboard  •  {sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}*"
     lines = [title, ""]
     for i, (user_id, stretches, workouts, gym, custom, live, other) in enumerate(rows[:5]):
-        total = stretches + workouts + gym + custom + live + other
+        other_total = sum(other.values()) if isinstance(other, dict) else other
+        total = stretches + workouts + gym + custom + live + other_total
         medal = medals[i]
         parts = []
         if stretches:
@@ -298,7 +303,10 @@ def handle_weekly_leaderboard(ack, command, respond):
             parts.append(f":tv: {live}")
         if custom:
             parts.append(f":runner: {custom}")
-        if other:
+        if isinstance(other, dict):
+            for emoji, count in other.items():
+                parts.append(f"{emoji} {count}")
+        elif other:
             parts.append(f":zap: {other}")
         detail = "  •  ".join(parts) if parts else "no activity"
         lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")

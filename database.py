@@ -177,7 +177,7 @@ def get_weekly_leaderboard(channel_id=None):
     today = date.today()
     sunday = today - timedelta(days=(today.weekday() + 1) % 7)
     saturday = sunday + timedelta(days=6)
-    query = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(sunday))
+    query = get_client().table("activity_logs").select("user_id,activity_type,description").gte("date", str(sunday))
     if channel_id:
         query = query.eq("channel_id", channel_id)
     result = query.execute()
@@ -185,11 +185,18 @@ def get_weekly_leaderboard(channel_id=None):
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0, "other": 0}
+            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0, "other": {}}
         t = row["activity_type"]
-        if t in stats[uid]:
+        if t == "other":
+            desc = row.get("description", "")
+            stats[uid]["other"][desc] = stats[uid]["other"].get(desc, 0) + 1
+        elif t in stats[uid]:
             stats[uid][t] += 1
-    rows = sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"], s["other"]) for uid, s in stats.items()], key=lambda x: sum(x[1:]), reverse=True)
+    rows = sorted(
+        [(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"], s["other"]) for uid, s in stats.items()],
+        key=lambda x: x[1] + x[2] + x[3] + x[4] + x[5] + sum(x[6].values()),
+        reverse=True,
+    )
     return rows, sunday, saturday
 
 
@@ -200,7 +207,7 @@ def get_weekly_custom_logs(user_id, since_date):
 
 
 def get_alltime_leaderboard(channel_id=None):
-    query = get_client().table("activity_logs").select("user_id,activity_type")
+    query = get_client().table("activity_logs").select("user_id,activity_type,description")
     if channel_id:
         query = query.eq("channel_id", channel_id)
     result = query.execute()
@@ -208,11 +215,18 @@ def get_alltime_leaderboard(channel_id=None):
     for row in result.data:
         uid = row["user_id"]
         if uid not in stats:
-            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0, "other": 0}
+            stats[uid] = {"stretch": 0, "workout": 0, "gym": 0, "custom": 0, "live": 0, "other": {}}
         t = row["activity_type"]
-        if t in stats[uid]:
+        if t == "other":
+            desc = row.get("description", "")
+            stats[uid]["other"][desc] = stats[uid]["other"].get(desc, 0) + 1
+        elif t in stats[uid]:
             stats[uid][t] += 1
-    return sorted([(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"], s["other"]) for uid, s in stats.items()], key=lambda x: sum(x[1:]), reverse=True)
+    return sorted(
+        [(uid, s["stretch"], s["workout"], s["gym"], s["custom"], s["live"], s["other"]) for uid, s in stats.items()],
+        key=lambda x: x[1] + x[2] + x[3] + x[4] + x[5] + sum(x[6].values()),
+        reverse=True,
+    )
 
 
 def get_setting(key, default=None):
