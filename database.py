@@ -160,9 +160,12 @@ def get_custom_activity_logs(user_id):
     return [(row["description"], row["date"]) for row in result.data]
 
 
-def get_weekly_stats():
+def get_weekly_stats(channel_id=None):
     week_ago = str(date.today() - timedelta(days=7))
-    result = get_client().table("activity_logs").select("user_id").gte("date", week_ago).execute()
+    query = get_client().table("activity_logs").select("user_id").gte("date", week_ago)
+    if channel_id:
+        query = query.eq("channel_id", channel_id)
+    result = query.execute()
     counts = {}
     for row in result.data:
         uid = row["user_id"]
@@ -170,11 +173,14 @@ def get_weekly_stats():
     return sorted(counts.items(), key=lambda x: x[1], reverse=True)
 
 
-def get_weekly_leaderboard():
+def get_weekly_leaderboard(channel_id=None):
     today = date.today()
     sunday = today - timedelta(days=(today.weekday() + 1) % 7)
     saturday = sunday + timedelta(days=6)
-    result = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(sunday)).execute()
+    query = get_client().table("activity_logs").select("user_id,activity_type").gte("date", str(sunday))
+    if channel_id:
+        query = query.eq("channel_id", channel_id)
+    result = query.execute()
     stats = {}
     for row in result.data:
         uid = row["user_id"]
@@ -193,8 +199,11 @@ def get_weekly_custom_logs(user_id, since_date):
     return [(r["description"], r["date"]) for r in result.data]
 
 
-def get_alltime_leaderboard():
-    result = get_client().table("activity_logs").select("user_id,activity_type").execute()
+def get_alltime_leaderboard(channel_id=None):
+    query = get_client().table("activity_logs").select("user_id,activity_type")
+    if channel_id:
+        query = query.eq("channel_id", channel_id)
+    result = query.execute()
     stats = {}
     for row in result.data:
         uid = row["user_id"]

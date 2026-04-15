@@ -226,7 +226,8 @@ def handle_mystats(ack, command):
 
 @bolt_app.command("/teamstats")
 def handle_teamstats(ack, command):
-    weekly = [(uid, c) for uid, c in database.get_weekly_stats() if uid != get_bot_user_id()]
+    channel_id = command.get("channel_id")
+    weekly = [(uid, c) for uid, c in database.get_weekly_stats(channel_id=channel_id) if uid != get_bot_user_id()]
     if not weekly:
         ack("No activity logged in the past 7 days yet. Be the first!")
         return
@@ -271,9 +272,10 @@ def _build_leaderboard_text(title, rows):
 
 
 @bolt_app.command("/pg-weeklyleaderboard")
-def handle_weekly_leaderboard(ack, respond):
+def handle_weekly_leaderboard(ack, command, respond):
     ack()
-    rows, sunday, saturday = database.get_weekly_leaderboard()
+    channel_id = command.get("channel_id")
+    rows, sunday, saturday = database.get_weekly_leaderboard(channel_id=channel_id)
     rows = _filter_bot_rows(rows)
     if not rows:
         respond({"text": f"No activity logged this week yet ({sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}). Be the first!", "response_type": "in_channel"})
@@ -304,9 +306,10 @@ def handle_weekly_leaderboard(ack, respond):
 
 
 @bolt_app.command("/pg-leaderboard")
-def handle_alltime_leaderboard(ack, respond):
+def handle_alltime_leaderboard(ack, command, respond):
     ack()
-    rows = _filter_bot_rows(database.get_alltime_leaderboard())
+    channel_id = command.get("channel_id")
+    rows = _filter_bot_rows(database.get_alltime_leaderboard(channel_id=channel_id))
     if not rows:
         respond({"text": "No activity logged yet. Be the first!", "response_type": "in_channel"})
         return
