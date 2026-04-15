@@ -275,14 +275,39 @@ def _build_leaderboard_text(title, rows):
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
 
 
+def _parse_week_arg(text):
+    """Parse a week argument into a reference date. Returns (date, error_str)."""
+    text = text.strip().lower()
+    if not text or text == "this":
+        return date.today(), None
+    if text == "last":
+        return date.today() - timedelta(days=7), None
+    # Try common date formats
+    from datetime import datetime as dt
+    for fmt in ("%Y-%m-%d", "%b %d", "%B %d", "%m/%d/%Y", "%m/%d"):
+        try:
+            parsed = dt.strptime(text.title(), fmt).date()
+            # For formats without a year, use the current year
+            if parsed.year == 1900:
+                parsed = parsed.replace(year=date.today().year)
+            return parsed, None
+        except ValueError:
+            continue
+    return None, f"Couldn't parse date '{text}'. Try: `last`, `Apr 5`, or `2026-04-05`."
+
+
 @bolt_app.command("/pg-weeklyleaderboard")
 def handle_weekly_leaderboard(ack, command, respond):
     ack()
     channel_id = command.get("channel_id")
-    rows, sunday, saturday = database.get_weekly_leaderboard(channel_id=channel_id)
+    ref_date, err = _parse_week_arg(command.get("text", ""))
+    if err:
+        respond({"text": err, "response_type": "ephemeral"})
+        return
+    rows, sunday, saturday = database.get_weekly_leaderboard(channel_id=channel_id, reference_date=ref_date)
     rows = _filter_bot_rows(rows)
     if not rows:
-        respond({"text": f"No activity logged this week yet ({sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}). Be the first!", "response_type": "in_channel"})
+        respond({"text": f"No activity logged for the week of {sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}.", "response_type": "in_channel"})
         return
 
     medals = ["🥇", "🥈", "🥉", "4.", "5."]

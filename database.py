@@ -173,11 +173,11 @@ def get_weekly_stats(channel_id=None):
     return sorted(counts.items(), key=lambda x: x[1], reverse=True)
 
 
-def get_weekly_leaderboard(channel_id=None):
-    today = date.today()
-    sunday = today - timedelta(days=(today.weekday() + 1) % 7)
+def get_weekly_leaderboard(channel_id=None, reference_date=None):
+    ref = reference_date or date.today()
+    sunday = ref - timedelta(days=(ref.weekday() + 1) % 7)
     saturday = sunday + timedelta(days=6)
-    query = get_client().table("activity_logs").select("user_id,activity_type,description").gte("date", str(sunday))
+    query = get_client().table("activity_logs").select("user_id,activity_type,description").gte("date", str(sunday)).lte("date", str(saturday))
     if channel_id:
         query = query.eq("channel_id", channel_id)
     result = query.execute()
