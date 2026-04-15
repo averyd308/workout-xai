@@ -78,6 +78,11 @@ def get_today_post(channel_id=None):
     return result.data[0] if result.data else None
 
 
+def get_all_posts():
+    result = get_client().table("daily_posts").select("*").order("date").execute()
+    return result.data
+
+
 def get_post_by_ts(message_ts):
     result = get_client().table("daily_posts").select("*").eq("message_ts", message_ts).execute()
     return result.data[0] if result.data else None
