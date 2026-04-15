@@ -275,35 +275,46 @@ def _build_leaderboard_text(title, rows):
     return {"text": f"*{title}*\n\n" + "\n".join(lines), "response_type": "in_channel"}
 
 
-def _parse_week_arg(text):
-    """Parse a week argument into a reference date. Returns (date, error_str)."""
+_CHANNEL_MENTION_RE = re.compile(r"<#([A-Z0-9]+)(?:\|[^>]*)?>")
+
+def _parse_leaderboard_args(text):
+    """Parse optional channel mention and date from command text.
+    Returns (channel_id_or_None, reference_date, error_str).
+    """
+    from datetime import datetime as dt
+
+    # Extract channel mention if present, e.g. <#C0AN6FGBF19|general>
+    channel_id = None
+    m = _CHANNEL_MENTION_RE.search(text)
+    if m:
+        channel_id = m.group(1)
+        text = _CHANNEL_MENTION_RE.sub("", text).strip()
+
+    # Parse remaining text as a date
     text = text.strip().lower()
     if not text or text == "this":
-        return date.today(), None
+        return channel_id, date.today(), None
     if text == "last":
-        return date.today() - timedelta(days=7), None
-    # Try common date formats
-    from datetime import datetime as dt
+        return channel_id, date.today() - timedelta(days=7), None
     for fmt in ("%Y-%m-%d", "%b %d", "%B %d", "%m/%d/%Y", "%m/%d"):
         try:
             parsed = dt.strptime(text.title(), fmt).date()
-            # For formats without a year, use the current year
             if parsed.year == 1900:
                 parsed = parsed.replace(year=date.today().year)
-            return parsed, None
+            return channel_id, parsed, None
         except ValueError:
             continue
-    return None, f"Couldn't parse date '{text}'. Try: `last`, `Apr 5`, or `2026-04-05`."
+    return channel_id, None, f"Couldn't parse date '{text}'. Try: `last`, `Apr 5`, or `2026-04-05`."
 
 
 @bolt_app.command("/pg-weeklyleaderboard")
 def handle_weekly_leaderboard(ack, command, respond):
     ack()
-    channel_id = command.get("channel_id")
-    ref_date, err = _parse_week_arg(command.get("text", ""))
+    source_channel, ref_date, err = _parse_leaderboard_args(command.get("text", ""))
     if err:
         respond({"text": err, "response_type": "ephemeral"})
         return
+    channel_id = source_channel or command.get("channel_id")
     rows, sunday, saturday = database.get_weekly_leaderboard(channel_id=channel_id, reference_date=ref_date)
     rows = _filter_bot_rows(rows)
     if not rows:
