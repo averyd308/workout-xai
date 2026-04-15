@@ -14,17 +14,11 @@ import logging
 from slack_sdk import WebClient
 
 import database
+from bot import STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-SKIP_EMOJIS = {
-    "person_in_lotus_position",  # stretch
-    "muscle",                    # workout
-    "runner",                    # custom
-    "man-lifting-weights",       # gym
-    "woman-lifting-weights",     # gym
-    "tv",                        # live
-}
+SKIP_EMOJIS = {STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, "tv"} | set(GYM_EMOJIS)
 
 def get_bot_user_id(client):
     return client.auth_test()["user_id"]
@@ -69,6 +63,9 @@ def main():
 
             for user_id in reaction.get("users", []):
                 if user_id == bot_id:
+                    continue
+
+                if emoji not in OTHER_ACTIVITY_EMOJIS and not emoji.startswith("muscle::"):
                     continue
 
                 logged = database.log_activity(

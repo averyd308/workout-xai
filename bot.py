@@ -21,6 +21,29 @@ WORKOUT_EMOJI = "muscle"
 CUSTOM_EMOJI = "runner"
 GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
 
+# Emojis that count as "other" activity when reacted on the daily post.
+# Skin-tone variants of "muscle" (e.g. muscle::skin-tone-3) are handled separately in the reaction handler.
+# Add any new fitness emojis here to have them tracked.
+OTHER_ACTIVITY_EMOJIS = {
+    # Cycling
+    "bike", "bicyclist", "mountain_bicyclist",
+    # Water
+    "swimmer", "surfer", "rowing",
+    # Snow / outdoor
+    "skier", "snowboarder", "person_climbing", "mountain_snow", "hiking_boot",
+    # Court / field sports
+    "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
+    "badminton", "ping_pong",
+    # Combat / other sports
+    "boxing_glove", "martial_arts_uniform", "person_fencing",
+    # Dance / cardio
+    "dancer", "man_dancing",
+    # Golf / leisure sport
+    "golf",
+    # General fitness
+    "athletic_shoe", "trophy", "sports_medal", "medal_sports",
+}
+
 _bot_user_id = None
 
 
