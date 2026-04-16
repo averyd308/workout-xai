@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from flask import Flask, request
 
 import database
-from bot import post_daily_message, post_weekly_leaderboard, send_pending_reminders
+from bot import post_daily_message, post_weekly_leaderboard, post_weekend_message, send_pending_reminders
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -45,6 +45,14 @@ def reminders_cron():
     from bot import bolt_app
     timezone = os.environ.get("TIMEZONE", "America/New_York")
     send_pending_reminders(bolt_app.client, timezone)
+    return "ok"
+
+
+@flask_app.route("/api/weekend-cron", methods=["GET", "POST"])
+def weekend_cron():
+    if os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
+        return "Unauthorized", 401
+    post_weekend_message()
     return "ok"
 
 

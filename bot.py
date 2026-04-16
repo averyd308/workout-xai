@@ -188,6 +188,110 @@ def _post_daily_to_channel(channel_id, force=False):
             logging.warning(f"Failed to add reaction {emoji}: {e}")
 
 
+# ── Weekend Post ─────────────────────────────────────────────────────────────
+
+def post_weekend_message(channel_id=None, force=False):
+    """Post a weekend check-in message on Saturday or Sunday."""
+    from datetime import datetime
+    ch = channel_id or CHANNEL_ID
+    today = str(datetime.now().date())
+
+    if not force and database.get_today_post(ch):
+        logging.info(f"Weekend post already sent today to {ch}, skipping.")
+        return
+
+    day_name = datetime.now().strftime("%A")  # "Saturday" or "Sunday"
+
+    blocks = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": f"Happy {day_name}! \U0001f389"},
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    "If you are working and do a workout today, react to this message "
+                    "with the proper emoji of the workout you did. It'll count towards your stats and the leaderboard!"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    ":person_in_lotus_position:  *Stretch*\n"
+                    "→ React with :person_in_lotus_position: if you stretched"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    ":muscle:  *Workout*\n"
+                    "→ React with :muscle: if you worked out"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    ":man-lifting-weights: :woman-lifting-weights:  *Hit the gym?*\n"
+                    "→ React with :man-lifting-weights: or :woman-lifting-weights: if you did a gym workout"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    ":zap:  *Did something else?*\n"
+                    "React with any emoji that represents your workout — a swim :swimmer:, "
+                    "a bike ride :bicyclist:, a hike :mountain_snow:, whatever fits!"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": "Check your stats with `/userstats`",
+                }
+            ],
+        },
+    ]
+
+    result = bolt_app.client.chat_postMessage(
+        channel=ch,
+        text=f"Happy {day_name}! React to log any workouts you do today.",
+        blocks=blocks,
+        unfurl_links=False,
+        unfurl_media=False,
+    )
+    database.save_daily_post(today, result["ts"], ch, f"{day_name} stretch", f"{day_name} workout")
+    logging.info(f"Weekend post sent to {ch}: ts={result['ts']}")
+
+    # Auto-react so users can tap the emojis directly
+    for emoji in [STRETCH_EMOJI, WORKOUT_EMOJI] + GYM_EMOJIS:
+        try:
+            bolt_app.client.reactions_add(channel=ch, timestamp=result["ts"], name=emoji)
+        except Exception as e:
+            logging.warning(f"Failed to add reaction {emoji}: {e}")
+
+
 # ── Weekly Leaderboard Auto-Post ─────────────────────────────────────────────
 
 def post_weekly_leaderboard(channel_id=None):
