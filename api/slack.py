@@ -323,29 +323,42 @@ def handle_weekly_leaderboard(ack, command, respond):
 
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
     title = f"*Weekly Leaderboard  •  {sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}*"
-    lines = [title, ""]
-    for i, (user_id, stretches, workouts, gym, custom, live, other) in enumerate(rows[:5]):
+
+    all_entries = []
+    for user_id, stretches, workouts, gym, custom, live, other in rows:
         other_total = sum(other.values()) if isinstance(other, dict) else other
         total = stretches + workouts + gym + custom + live + other_total
-        medal = medals[i]
-        parts = []
-        if stretches:
-            parts.append(f":person_in_lotus_position: {stretches}")
-        if workouts:
-            parts.append(f":muscle: {workouts}")
-        if gym:
-            parts.append(f":man-lifting-weights: {gym}")
-        if live:
-            parts.append(f":tv: {live}")
-        if custom:
-            parts.append(f":runner: {custom}")
-        if isinstance(other, dict):
-            for emoji, count in other.items():
-                parts.append(f"{emoji} {count}")
-        elif other:
-            parts.append(f":zap: {other}")
-        detail = "  •  ".join(parts) if parts else "no activity"
-        lines.append(f"{medal} <@{user_id}>: *{total}* total  ›  {detail}")
+        all_entries.append((user_id, stretches, workouts, gym, custom, live, other, total))
+
+    distinct_totals = sorted(set(e[-1] for e in all_entries), reverse=True)
+    top5_totals = set(distinct_totals[:5])
+    eligible = [e for e in all_entries if e[-1] in top5_totals]
+
+    lines = [title, ""]
+    for rank_idx, total_val in enumerate(distinct_totals[:5]):
+        group = [e for e in eligible if e[-1] == total_val]
+        medal = medals[rank_idx] if rank_idx < len(medals) else f"{rank_idx + 1}."
+        entries = []
+        for user_id, stretches, workouts, gym, custom, live, other, total in group:
+            parts = []
+            if stretches:
+                parts.append(f":person_in_lotus_position: {stretches}")
+            if workouts:
+                parts.append(f":muscle: {workouts}")
+            if gym:
+                parts.append(f":man-lifting-weights: {gym}")
+            if live:
+                parts.append(f":tv: {live}")
+            if custom:
+                parts.append(f":runner: {custom}")
+            if isinstance(other, dict):
+                for emoji, count in other.items():
+                    parts.append(f"{emoji} {count}")
+            elif other:
+                parts.append(f":zap: {other}")
+            detail = "  •  ".join(parts) if parts else "no activity"
+            entries.append(f"<@{user_id}>: *{total}* total  ›  {detail}")
+        lines.append(f"{medal} " + ", ".join(entries))
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 
