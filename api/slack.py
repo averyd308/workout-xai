@@ -386,7 +386,7 @@ def handle_resync(ack, command, respond):
 
     bot_id = get_bot_user_id()
     total_logged = 0
-    total_skipped = 0
+    total_removed = 0
 
     for post in posts:
         ts = post.get("message_ts")
@@ -404,37 +404,60 @@ def handle_resync(ack, command, respond):
         scheduled = database.get_scheduled_options(post_date)
         custom_title = scheduled[4] if scheduled and scheduled[4] else None
 
+        # Build ground-truth set of (user_id, activity_type, description) from Slack
+        expected = {}  # user_id -> set of (activity_type, description)
         for reaction in resp.get("message", {}).get("reactions", []):
             emoji = reaction["name"]
             for user_id in reaction.get("users", []):
                 if user_id == bot_id:
                     continue
-
                 if emoji == STRETCH_EMOJI:
-                    activity_type, desc = "stretch", post["stretch_option"]
+                    entry = ("stretch", post["stretch_option"])
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
-                    activity_type, desc = "workout", post["workout_option"]
+                    entry = ("workout", post["workout_option"])
                 elif emoji in GYM_EMOJIS:
-                    activity_type, desc = "gym", "Gym workout"
+                    entry = ("gym", "Gym workout")
                 elif emoji == CUSTOM_EMOJI:
                     if not custom_title:
                         continue
-                    activity_type, desc = "custom", ""
+                    entry = ("custom", "")
                 elif emoji == LIVE_EMOJI:
                     continue
                 elif emoji in OTHER_ACTIVITY_EMOJIS:
-                    activity_type, desc = "other", f":{emoji}:"
+                    entry = ("other", f":{emoji}:")
                 else:
                     continue
+                expected.setdefault(user_id, set()).add(entry)
 
+        # Add any missing entries
+        for user_id, entries in expected.items():
+            for activity_type, desc in entries:
                 logged = database.log_activity(user_id, activity_type, desc, channel_id=channel_id, date_str=post_date)
                 if logged:
                     total_logged += 1
-                else:
-                    total_skipped += 1
+
+        # Remove entries that no longer have a matching reaction
+        db_activities = database.get_activities_for_date(post_date, channel_id)
+        for activity in db_activities:
+            uid = activity["user_id"]
+            atype = activity["activity_type"]
+            desc = activity.get("description") or ""
+            # Only touch reaction-based entries; leave live and Strava/manual customs alone
+            if atype == "live":
+                continue
+            if atype == "custom" and desc != "":
+                continue
+            user_expected = expected.get(uid, set())
+            if (atype, desc) not in user_expected:
+                database.delete_activity_by_id(activity["id"])
+                total_removed += 1
 
     respond({
-        "text": f":arrows_counterclockwise: Resync complete for *{date_range}*\n• *{total_logged}* new activities logged\n• *{total_skipped}* already existed",
+        "text": (
+            f":arrows_counterclockwise: Resync complete for *{date_range}*\n"
+            f"• *{total_logged}* new activities added\n"
+            f"• *{total_removed}* stale activities removed"
+        ),
         "response_type": "ephemeral",
     })
 
