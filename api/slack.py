@@ -362,6 +362,83 @@ def handle_weekly_leaderboard(ack, command, respond):
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 
+@bolt_app.command("/pg-resync")
+def handle_resync(ack, command, respond):
+    """Re-read this week's Slack reactions and fill in any the bot missed."""
+    ack()
+    from datetime import date, timedelta
+
+    text = (command.get("text") or "").strip().lower()
+    today = date.today()
+    if text == "last":
+        ref = today - timedelta(days=7)
+    else:
+        ref = today
+
+    sunday = ref - timedelta(days=(ref.weekday() + 1) % 7)
+    saturday = sunday + timedelta(days=6)
+    date_range = f"{sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}"
+
+    posts = database.get_posts_by_date_range(sunday, saturday)
+    if not posts:
+        respond({"text": f"No daily posts found for {date_range}.", "response_type": "ephemeral"})
+        return
+
+    bot_id = get_bot_user_id()
+    total_logged = 0
+    total_skipped = 0
+
+    for post in posts:
+        ts = post.get("message_ts")
+        channel_id = post.get("channel_id") or CHANNEL_ID
+        post_date = post["date"]
+        if not ts:
+            continue
+
+        try:
+            resp = bolt_app.client.reactions_get(channel=channel_id, timestamp=ts, full=True)
+        except Exception as e:
+            logging.warning(f"resync: could not fetch reactions for {post_date}: {e}")
+            continue
+
+        scheduled = database.get_scheduled_options(post_date)
+        custom_title = scheduled[4] if scheduled and scheduled[4] else None
+
+        for reaction in resp.get("message", {}).get("reactions", []):
+            emoji = reaction["name"]
+            for user_id in reaction.get("users", []):
+                if user_id == bot_id:
+                    continue
+
+                if emoji == STRETCH_EMOJI:
+                    activity_type, desc = "stretch", post["stretch_option"]
+                elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
+                    activity_type, desc = "workout", post["workout_option"]
+                elif emoji in GYM_EMOJIS:
+                    activity_type, desc = "gym", "Gym workout"
+                elif emoji == CUSTOM_EMOJI:
+                    if not custom_title:
+                        continue
+                    activity_type, desc = "custom", ""
+                elif emoji == LIVE_EMOJI:
+                    continue
+                elif emoji in OTHER_ACTIVITY_EMOJIS:
+                    activity_type, desc = "other", f":{emoji}:"
+                else:
+                    continue
+
+                logged = database.log_activity(user_id, activity_type, desc, channel_id=channel_id, date_str=post_date)
+                if logged:
+                    total_logged += 1
+                else:
+                    total_skipped += 1
+
+    respond({
+        "text": f":arrows_counterclockwise: Resync complete for *{date_range}*\n• *{total_logged}* new activities logged\n• *{total_skipped}* already existed",
+        "response_type": "ephemeral",
+    })
+
+
 @bolt_app.command("/pg-leaderboard")
 def handle_alltime_leaderboard(ack, command, respond):
     ack()

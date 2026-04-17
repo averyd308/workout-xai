@@ -83,6 +83,17 @@ def get_all_posts():
     return result.data
 
 
+def get_posts_by_date_range(start_date, end_date):
+    result = (
+        get_client().table("daily_posts").select("*")
+        .gte("date", str(start_date))
+        .lte("date", str(end_date))
+        .order("date")
+        .execute()
+    )
+    return result.data
+
+
 def get_post_by_ts(message_ts):
     result = get_client().table("daily_posts").select("*").eq("message_ts", message_ts).execute()
     return result.data[0] if result.data else None
