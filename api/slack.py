@@ -358,7 +358,7 @@ def handle_weekly_leaderboard(ack, command, respond):
                 parts.append(f":zap: {other}")
             detail = "  •  ".join(parts) if parts else "no activity"
             entries.append(f"<@{user_id}>: *{total}* total  ›  {detail}")
-        lines.append(f"{medal} " + ", ".join(entries))
+        lines.append(f"{medal} " + ",     ".join(entries))
     respond({"text": "\n".join(lines), "response_type": "in_channel"})
 
 

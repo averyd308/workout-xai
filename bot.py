@@ -354,7 +354,7 @@ def post_weekly_leaderboard(channel_id=None):
                         parts.append(f":zap: {other}")
                     detail = "  •  ".join(parts) if parts else "no activity"
                     entries.append(f"<@{uid}>: *{total}* total  ›  {detail}")
-                lines.append(f"{medal} " + ", ".join(entries))
+                lines.append(f"{medal} " + ",     ".join(entries))
 
             bolt_app.client.chat_postMessage(
                 channel=ch,
