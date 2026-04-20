@@ -193,9 +193,15 @@ def _post_daily_to_channel(channel_id, force=False):
 def post_weekend_message(channel_id=None, force=False):
     """Post a weekend check-in message on Saturday or Sunday."""
     from datetime import datetime
-    ch = channel_id or CHANNEL_ID
+    channels = [channel_id] if channel_id else CHANNEL_IDS
     today = str(datetime.now().date())
 
+    for ch in channels:
+        _post_weekend_to_channel(ch, today, force)
+
+
+def _post_weekend_to_channel(ch, today, force=False):
+    from datetime import datetime
     if not force and database.get_today_post(ch):
         logging.info(f"Weekend post already sent today to {ch}, skipping.")
         return

@@ -14,7 +14,7 @@ import re
 import time as _time
 
 import database
-from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS, post_daily_message, parse_reminder_input, get_bot_user_id
+from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS, post_daily_message, post_weekend_message, parse_reminder_input, get_bot_user_id
 
 LIVE_EMOJI = "tv"
 
@@ -549,6 +549,17 @@ def handle_post_daily(ack, command, respond):
         respond(":white_check_mark: Daily workout posted!")
     except Exception as e:
         logging.error(f"/postdaily error: {e}")
+        respond(f"Error: {e}")
+
+
+@bolt_app.command("/postweekend")
+def handle_post_weekend(ack, command, respond):
+    ack()
+    try:
+        post_weekend_message(channel_id=command.get("channel_id"), force=True)
+        respond(":white_check_mark: Weekend post sent!")
+    except Exception as e:
+        logging.error(f"/postweekend error: {e}")
         respond(f"Error: {e}")
 
 
