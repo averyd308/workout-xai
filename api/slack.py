@@ -482,8 +482,20 @@ def _parse_schedule_input(text):
     if text.lower().startswith("tomorrow "):
         text = text[9:].strip()
         target_date = str(date.today() + timedelta(days=1))
-    if "|" in text:
-        title, description = [p.strip() for p in text.split("|", 1)]
+    # Split on the first | that is NOT inside a Slack link <url|text>
+    depth = 0
+    split_pos = None
+    for i, ch in enumerate(text):
+        if ch == "<":
+            depth += 1
+        elif ch == ">":
+            depth -= 1
+        elif ch == "|" and depth == 0:
+            split_pos = i
+            break
+    if split_pos is not None:
+        title = text[:split_pos].strip()
+        description = text[split_pos + 1:].strip()
     else:
         title, description = text.strip(), ""
     return target_date, title, description
