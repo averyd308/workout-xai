@@ -79,7 +79,7 @@ def handle_reaction_added(event):
             bolt_app.client.chat_postEphemeral(
                 channel=post_channel,
                 user=user_id,
-                text=f":person_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} in this channel.",
+                text=f":person_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} in this channel. Don't see it? Message Avery!",
             )
 
     elif emoji == WORKOUT_EMOJI:
@@ -90,7 +90,7 @@ def handle_reaction_added(event):
             bolt_app.client.chat_postEphemeral(
                 channel=post_channel,
                 user=user_id,
-                text=f":muscle: Great workout! You've logged *{count}* workout{'s' if count != 1 else ''} in this channel.",
+                text=f":muscle: Great workout! You've logged *{count}* workout{'s' if count != 1 else ''} in this channel. Don't see it? Message Avery!",
             )
 
     elif emoji == CUSTOM_EMOJI:
@@ -107,7 +107,7 @@ def handle_reaction_added(event):
                 bolt_app.client.chat_postEphemeral(
                     channel=post_channel,
                     user=user_id,
-                    text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} in this channel.",
+                    text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
                 )
 
     elif emoji in GYM_EMOJIS:
@@ -118,7 +118,7 @@ def handle_reaction_added(event):
             bolt_app.client.chat_postEphemeral(
                 channel=post_channel,
                 user=user_id,
-                text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} in this channel.",
+                text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} in this channel. Don't see it? Message Avery!",
             )
 
     elif emoji in OTHER_ACTIVITY_EMOJIS or emoji.startswith("muscle::"):
@@ -129,7 +129,7 @@ def handle_reaction_added(event):
             bolt_app.client.chat_postEphemeral(
                 channel=post_channel,
                 user=user_id,
-                text=f":{emoji}: Activity logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel.",
+                text=f":{emoji}: Activity logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
             )
 
 
@@ -174,12 +174,12 @@ def handle_ping(ack, respond):
 def handle_mystats(ack, command):
     try:
         channel_id = command.get("channel_id") or CHANNEL_ID
-        stats = database.get_user_stats(command["user_id"], channel_id=channel_id)
+        stats, sunday, saturday = database.get_user_weekly_stats(command["user_id"], channel_id=channel_id)
     except Exception as e:
         ack(f"DB error: {e}")
         return
     if not stats:
-        ack("You haven't logged anything yet in this channel! React to today's post or use `/workout` to get started.")
+        ack("You haven't logged anything this week in this channel! React to today's post to get started.")
         return
 
     stretch = stats.get("stretch", 0)
@@ -188,15 +188,16 @@ def handle_mystats(ack, command):
     custom = stats.get("custom", 0)
     live = stats.get("live", 0)
     total = sum(stats.values())
+    date_range = f"{sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}"
     lines = [
-        "*Your activity stats (this channel):*",
+        f"*Your weekly stats ({date_range}):*",
         f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
         f":muscle:  Workouts: *{workout}*",
         f":man-lifting-weights:  Gym sessions: *{gym}*",
         f":tv:  Live workouts: *{live}*",
         f":runner:  Custom activities: *{custom}*",
         "─────────────────────",
-        f"Total: *{total}* activities",
+        f"Total: *{total}* activities this week",
     ]
     ack("\n".join(lines))
 

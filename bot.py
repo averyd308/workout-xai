@@ -82,19 +82,14 @@ def _post_daily_to_channel(channel_id, force=False):
             "type": "header",
             "text": {"type": "plain_text", "text": header_text},
         },
-        {
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": "React to log your activity — you can do one or both!"},
-        },
         {"type": "divider"},
         {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f":person_in_lotus_position:  *{stretch['title']}*\n"
-                    f"_{stretch['description']}_\n"
-                    f"→ React with :person_in_lotus_position: when done"
+                    f":person_in_lotus_position:  {stretch['title']}\n"
+                    f"_{stretch['description']}_"
                 ),
             },
         },
@@ -104,9 +99,8 @@ def _post_daily_to_channel(channel_id, force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f":muscle:  *{workout['title']}*\n"
-                    f"_{workout['description']}_\n"
-                    f"→ React with :muscle: when done"
+                    f":muscle:  {workout['title']}\n"
+                    f"_{workout['description']}_"
                 ),
             },
         },
@@ -120,9 +114,8 @@ def _post_daily_to_channel(channel_id, force=False):
                 "text": {
                     "type": "mrkdwn",
                     "text": (
-                        f":runner:  *{custom_suggestion['title']}*\n"
-                        f"_{custom_suggestion['description']}_\n"
-                        f"→ React with :runner: when done"
+                        f":runner:  {custom_suggestion['title']}\n"
+                        f"_{custom_suggestion['description']}_"
                     ),
                 },
             },
@@ -135,17 +128,12 @@ def _post_daily_to_channel(channel_id, force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    ":man-lifting-weights: :woman-lifting-weights:  *Hit the gym?*\n"
-                    "→ React with :man-lifting-weights: or :woman-lifting-weights: if you did a gym workout today"
+                    "*How to log a workout:*\n"
+                    "• React to log your activity — you can do one or more!\n"
+                    "• React with :muscle: / :person_in_lotus_position: / :runner: when done\n"
+                    "• Hit the gym? React with :man-lifting-weights: or :woman-lifting-weights:\n"
+                    "• Do a workout you don't see here? React with an appropriate emoji and it'll get logged!"
                 ),
-            },
-        },
-        {"type": "divider"},
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": ":zap:  *Did something else?*\nReact with any emoji that represents your workout to track it — a swim :swimmer:, a bike ride :bicyclist:, a hike :mountain_snow:, whatever fits!",
             },
         },
         {"type": "divider"},
@@ -154,7 +142,7 @@ def _post_daily_to_channel(channel_id, force=False):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Check your stats with `/userstats`",
+                    "text": "Check your weekly stats with `/userstats`.",
                 }
             ],
         },

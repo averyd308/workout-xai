@@ -176,6 +176,26 @@ def get_user_stats(user_id, channel_id=None):
     return stats
 
 
+def get_user_weekly_stats(user_id, channel_id=None):
+    sunday = date.today() - timedelta(days=(date.today().weekday() + 1) % 7)
+    saturday = sunday + timedelta(days=6)
+    query = (
+        get_client().table("activity_logs")
+        .select("activity_type")
+        .eq("user_id", user_id)
+        .gte("date", str(sunday))
+        .lte("date", str(saturday))
+    )
+    if channel_id:
+        query = query.eq("channel_id", channel_id)
+    result = query.execute()
+    stats = {}
+    for row in result.data:
+        t = row["activity_type"]
+        stats[t] = stats.get(t, 0) + 1
+    return stats, sunday, saturday
+
+
 def get_custom_activity_logs(user_id):
     """Return list of (description, date_str) for all custom activities, newest first."""
     result = get_client().table("activity_logs").select("description,date").eq("user_id", user_id).eq("activity_type", "custom").order("date", desc=True).execute()
