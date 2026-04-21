@@ -47,6 +47,11 @@ OTHER_ACTIVITY_EMOJIS = {
 _bot_user_id = None
 
 
+def _md_to_slack(text):
+    """Convert markdown links [label](url) to Slack mrkdwn format <url|label>."""
+    return re.sub(r'\[([^\]]+)\]\((https?://[^\)]+)\)', r'<\2|\1>', text)
+
+
 def get_bot_user_id():
     global _bot_user_id
     if _bot_user_id is None:
@@ -89,7 +94,7 @@ def _post_daily_to_channel(channel_id, force=False):
                 "type": "mrkdwn",
                 "text": (
                     f":person_in_lotus_position:  {stretch['title']}\n"
-                    f"{stretch['description']}"
+                    f"{_md_to_slack(stretch['description'])}"
                 ),
             },
         },
@@ -100,7 +105,7 @@ def _post_daily_to_channel(channel_id, force=False):
                 "type": "mrkdwn",
                 "text": (
                     f":muscle:  {workout['title']}\n"
-                    f"{workout['description']}"
+                    f"{_md_to_slack(workout['description'])}"
                 ),
             },
         },
@@ -115,7 +120,7 @@ def _post_daily_to_channel(channel_id, force=False):
                     "type": "mrkdwn",
                     "text": (
                         f":runner:  {custom_suggestion['title']}\n"
-                        f"{custom_suggestion['description']}"
+                        f"{_md_to_slack(custom_suggestion['description'])}"
                     ),
                 },
             },
