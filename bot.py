@@ -89,7 +89,7 @@ def _post_daily_to_channel(channel_id, force=False):
                 "type": "mrkdwn",
                 "text": (
                     f":person_in_lotus_position:  {stretch['title']}\n"
-                    f"_{stretch['description']}_"
+                    f"{stretch['description']}"
                 ),
             },
         },
@@ -100,7 +100,7 @@ def _post_daily_to_channel(channel_id, force=False):
                 "type": "mrkdwn",
                 "text": (
                     f":muscle:  {workout['title']}\n"
-                    f"_{workout['description']}_"
+                    f"{workout['description']}"
                 ),
             },
         },
@@ -115,7 +115,7 @@ def _post_daily_to_channel(channel_id, force=False):
                     "type": "mrkdwn",
                     "text": (
                         f":runner:  {custom_suggestion['title']}\n"
-                        f"_{custom_suggestion['description']}_"
+                        f"{custom_suggestion['description']}"
                     ),
                 },
             },
