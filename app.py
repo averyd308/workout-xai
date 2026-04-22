@@ -24,7 +24,7 @@ POST_HOUR = int(os.environ.get("POST_HOUR", 9))
 POST_MINUTE = int(os.environ.get("POST_MINUTE", 0))
 TIMEZONE = os.environ.get("TIMEZONE", "America/New_York")
 
-STRETCH_EMOJI = "person_in_lotus_position"
+STRETCH_EMOJIS = ["person_in_lotus_position", "person_in_lotus_position::skin-tone-3"]
 WORKOUT_EMOJI = "muscle"
 GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
 
@@ -112,7 +112,7 @@ def handle_reaction_added(event):
     user_id = event["user"]
     emoji = event["reaction"]
 
-    if emoji == STRETCH_EMOJI:
+    if emoji in STRETCH_EMOJIS:
         logged = database.log_activity(user_id, "stretch", stretch_title)
         if logged:
             stats = database.get_user_stats(user_id)
@@ -158,7 +158,7 @@ def handle_reaction_removed(event):
     user_id = event["user"]
     emoji = event["reaction"]
 
-    if emoji == STRETCH_EMOJI:
+    if emoji in STRETCH_EMOJIS:
         database.remove_activity(user_id, "stretch")
     elif emoji == WORKOUT_EMOJI:
         database.remove_activity(user_id, "workout")
