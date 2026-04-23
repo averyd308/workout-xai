@@ -42,6 +42,8 @@ OTHER_ACTIVITY_EMOJIS = {
     "golf",
     # General fitness
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
+    # Walking
+    "walking",
 }
 
 _bot_user_id = None
