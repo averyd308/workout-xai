@@ -464,6 +464,22 @@ def handle_resync(ack, command, respond):
             else:
                 seen_keys[key] = activity["id"]
 
+    # Remove reaction-based entries on dates that had no daily post
+    known_post_dates = {p["date"] for p in posts}
+    for ch in CHANNEL_IDS:
+        all_week = database.get_activities_for_date_range(sunday, saturday, channel_id=ch)
+        for activity in all_week:
+            if activity["date"] in known_post_dates:
+                continue
+            atype = activity["activity_type"]
+            desc = activity.get("description") or ""
+            if atype == "live":
+                continue
+            if atype == "custom" and desc != "":
+                continue
+            database.delete_activity_by_id(activity["id"])
+            total_removed += 1
+
     respond({
         "text": (
             f":arrows_counterclockwise: Resync complete for *{date_range}*\n"

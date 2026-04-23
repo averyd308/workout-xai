@@ -101,6 +101,13 @@ def get_activities_for_date(date_str, channel_id=None):
     return query.execute().data
 
 
+def get_activities_for_date_range(start_date, end_date, channel_id=None):
+    query = get_client().table("activity_logs").select("*").gte("date", str(start_date)).lte("date", str(end_date))
+    if channel_id:
+        query = query.eq("channel_id", channel_id)
+    return query.execute().data
+
+
 def delete_activity_by_id(activity_id):
     get_client().table("activity_logs").delete().eq("id", activity_id).execute()
 
