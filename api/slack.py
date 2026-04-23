@@ -453,6 +453,17 @@ def handle_resync(ack, command, respond):
                 database.delete_activity_by_id(activity["id"])
                 total_removed += 1
 
+        # Remove duplicate rows (same user/type/description keeping the first seen)
+        db_activities = database.get_activities_for_date(post_date, channel_id)
+        seen_keys = {}
+        for activity in db_activities:
+            key = (activity["user_id"], activity["activity_type"], activity.get("description") or "")
+            if key in seen_keys:
+                database.delete_activity_by_id(activity["id"])
+                total_removed += 1
+            else:
+                seen_keys[key] = activity["id"]
+
     respond({
         "text": (
             f":arrows_counterclockwise: Resync complete for *{date_range}*\n"
