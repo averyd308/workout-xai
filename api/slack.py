@@ -490,6 +490,85 @@ def handle_resync(ack, command, respond):
     })
 
 
+@bolt_app.command("/pg-backfill")
+def handle_backfill(ack, command, client):
+    ack()
+    channel_id = command.get("channel_id") or CHANNEL_ID
+    client.chat_postMessage(channel=channel_id, text=":hourglass: Starting channel ID backfill — this may take a minute...")
+
+    bot_id = get_bot_user_id()
+    db = database.get_client()
+    posts = database.get_all_posts()
+
+    total_patched = 0
+    total_inserted = 0
+    total_skipped = 0
+
+    for post in posts:
+        ts = post.get("message_ts")
+        post_channel = post.get("channel_id")
+        post_date = post["date"]
+        if not ts or not post_channel:
+            continue
+        try:
+            resp = bolt_app.client.reactions_get(channel=post_channel, timestamp=ts, full=True)
+        except Exception:
+            continue
+
+        scheduled = database.get_scheduled_options(post_date)
+        custom_title = scheduled[4] if scheduled and scheduled[4] else None
+
+        for reaction in resp.get("message", {}).get("reactions", []):
+            emoji = reaction["name"]
+            for user_id in reaction.get("users", []):
+                if user_id == bot_id:
+                    continue
+                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::"):
+                    atype, desc = "stretch", post.get("stretch_option", "")
+                elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
+                    atype, desc = "workout", post.get("workout_option", "")
+                elif emoji in GYM_EMOJIS:
+                    atype, desc = "gym", "Gym workout"
+                elif emoji == CUSTOM_EMOJI:
+                    if not custom_title:
+                        continue
+                    atype, desc = "custom", ""
+                elif emoji in OTHER_ACTIVITY_EMOJIS:
+                    atype, desc = "other", f":{emoji}:"
+                else:
+                    continue
+
+                patch_query = (
+                    db.table("activity_logs")
+                    .update({"channel_id": post_channel})
+                    .eq("user_id", user_id)
+                    .eq("date", post_date)
+                    .eq("activity_type", atype)
+                    .is_("channel_id", "null")
+                )
+                if atype == "other":
+                    patch_query = patch_query.eq("description", desc)
+                patched = len(patch_query.execute().data)
+                if patched:
+                    total_patched += patched
+                    continue
+
+                if database.log_activity(user_id, atype, desc, channel_id=post_channel, date_str=post_date):
+                    total_inserted += 1
+                else:
+                    total_skipped += 1
+
+    client.chat_postMessage(
+        channel=channel_id,
+        text=(
+            f":white_check_mark: Backfill complete!\n"
+            f"• *{total_patched}* rows patched with correct channel\n"
+            f"• *{total_inserted}* missing rows inserted\n"
+            f"• *{total_skipped}* rows already correct"
+        ),
+    )
+
+
 @bolt_app.command("/pg-leaderboard")
 def handle_alltime_leaderboard(ack, command, respond):
     ack()
