@@ -859,7 +859,7 @@ def handle_menu_alltime_leaderboard(ack, body, client):
     ack()
     channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
     try:
-        rows = _filter_bot_rows(database.get_alltime_leaderboard())
+        rows = _filter_bot_rows(database.get_alltime_leaderboard(channel_id=channel_id))
         if not rows:
             client.chat_postMessage(channel=channel_id, text="No activity logged yet. Be the first!")
             return
