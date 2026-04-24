@@ -493,12 +493,17 @@ def handle_resync(ack, command, respond):
 @bolt_app.command("/pg-leaderboard")
 def handle_alltime_leaderboard(ack, command, respond):
     ack()
-    channel_id = command.get("channel_id")
+    source_channel, _, err = _parse_leaderboard_args(command.get("text", ""))
+    if err:
+        respond({"text": err, "response_type": "ephemeral"})
+        return
+    channel_id = source_channel or command.get("channel_id")
     rows = _filter_bot_rows(database.get_alltime_leaderboard(channel_id=channel_id))
     if not rows:
         respond({"text": "No activity logged yet. Be the first!", "response_type": "in_channel"})
         return
-    respond(_build_leaderboard_text("All-Time Leaderboard", rows))
+    title = "All-Time Leaderboard" if not source_channel else f"All-Time Leaderboard  •  <#{channel_id}>"
+    respond(_build_leaderboard_text(title, rows))
 
 
 # ── Schedule Commands ──────────────────────────────────────────────────────────
