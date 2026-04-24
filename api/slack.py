@@ -502,7 +502,7 @@ def handle_alltime_leaderboard(ack, command, respond):
     if not rows:
         respond({"text": "No activity logged yet. Be the first!", "response_type": "in_channel"})
         return
-    title = "All-Time Leaderboard" if not source_channel else f"All-Time Leaderboard  •  <#{channel_id}>"
+    title = f"All-Time Leaderboard  •  <#{channel_id}>"
     respond(_build_leaderboard_text(title, rows))
 
 
@@ -877,11 +877,13 @@ def handle_menu_alltime_leaderboard(ack, body, client):
 @bolt_app.action("menu_log_workout")
 def handle_menu_log_workout(ack, body, client):
     ack()
+    channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
     client.views_open(
         trigger_id=body["trigger_id"],
         view={
             "type": "modal",
             "callback_id": "log_workout_modal",
+            "private_metadata": channel_id,
             "title": {"type": "plain_text", "text": "Log Workout"},
             "submit": {"type": "plain_text", "text": "Log It"},
             "close": {"type": "plain_text", "text": "Cancel"},
@@ -907,9 +909,10 @@ def handle_log_workout_modal(ack, view, body, client):
         return
     ack()
     user_id = body["user"]["id"]
+    channel_id = view.get("private_metadata") or CHANNEL_ID
     try:
-        database.log_activity(user_id, "custom", description)
-        stats = database.get_user_stats(user_id)
+        database.log_activity(user_id, "custom", description, channel_id=channel_id)
+        stats = database.get_user_stats(user_id, channel_id=channel_id)
         dm = client.conversations_open(users=user_id)
         client.chat_postMessage(channel=dm["channel"]["id"], text=(
             f":white_check_mark: Logged: _{description}_\n"
