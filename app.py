@@ -27,6 +27,7 @@ TIMEZONE = os.environ.get("TIMEZONE", "America/New_York")
 STRETCH_EMOJIS = ["person_in_lotus_position", "person_in_lotus_position::skin-tone-3"]
 WORKOUT_EMOJI = "muscle"
 GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
+WALK_EMOJIS = ["walking", "walking::skin-tone-2", "walking::skin-tone-3", "walking::skin-tone-4", "walking::skin-tone-5", "walking::skin-tone-6"]
 
 
 # ── Daily Post ────────────────────────────────────────────────────────────────
@@ -145,6 +146,17 @@ def handle_reaction_added(event):
                 text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} total.",
             )
 
+    elif emoji in WALK_EMOJIS:
+        logged = database.log_activity(user_id, "walk", "Walk")
+        if logged:
+            stats = database.get_user_stats(user_id)
+            count = stats.get("walk", 0)
+            app.client.chat_postEphemeral(
+                channel=CHANNEL_ID,
+                user=user_id,
+                text=f":walking: Walk logged! You've logged *{count}* {'walk' if count == 1 else 'walks'} total.",
+            )
+
 
 @app.event("reaction_removed")
 def handle_reaction_removed(event):
@@ -164,6 +176,8 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "workout")
     elif emoji in GYM_EMOJIS:
         database.remove_activity(user_id, "gym")
+    elif emoji in WALK_EMOJIS:
+        database.remove_activity(user_id, "walk")
 
 
 # ── Slash Commands ────────────────────────────────────────────────────────────
@@ -179,6 +193,7 @@ def handle_mystats(ack, command, respond):
     stretch = stats.get("stretch", 0)
     workout = stats.get("workout", 0)
     gym = stats.get("gym", 0)
+    walk = stats.get("walk", 0)
     custom = stats.get("custom", 0)
     total = sum(stats.values())
 
@@ -187,6 +202,7 @@ def handle_mystats(ack, command, respond):
         f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
         f":muscle:  Workouts: *{workout}*\n"
         f":man-lifting-weights:  Gym sessions: *{gym}*\n"
+        f":walking:  Walks: *{walk}*\n"
         f":running:  Custom activities: *{custom}*\n"
         f"─────────────────────\n"
         f"Total: *{total}* activities"
