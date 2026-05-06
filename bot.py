@@ -41,7 +41,7 @@ OTHER_ACTIVITY_EMOJIS = {
     # Golf / leisure sport
     "golf", "man-golfing",
     # VR / gaming fitness
-    "skeleton-vrtv",
+    "skeleton-vrtv", "skeleton_vrtv",
     # General fitness
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     # Walking
