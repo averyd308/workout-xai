@@ -332,12 +332,10 @@ def handle_weekly_leaderboard(ack, command, respond):
         all_entries.append((user_id, stretches, workouts, gym, custom, live, other, total))
 
     distinct_totals = sorted(set(e[-1] for e in all_entries), reverse=True)
-    top5_totals = set(distinct_totals[:5])
-    eligible = [e for e in all_entries if e[-1] in top5_totals]
 
     lines = [title, ""]
-    for rank_idx, total_val in enumerate(distinct_totals[:5]):
-        group = [e for e in eligible if e[-1] == total_val]
+    for rank_idx, total_val in enumerate(distinct_totals):
+        group = [e for e in all_entries if e[-1] == total_val]
         medal = medals[rank_idx] if rank_idx < len(medals) else f"{rank_idx + 1}."
         entries = []
         for user_id, stretches, workouts, gym, custom, live, other, total in group:

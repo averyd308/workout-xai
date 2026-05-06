@@ -45,7 +45,7 @@ OTHER_ACTIVITY_EMOJIS = {
     # General fitness
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     # Walking
-    "walking",
+    "walking", "walking-the-dog",
 }
 
 _bot_user_id = None
@@ -328,14 +328,11 @@ def post_weekly_leaderboard(channel_id=None):
                 total = stretches + workouts + gym + custom + live + other_total
                 all_entries.append((uid, stretches, workouts, gym, custom, live, other, total))
 
-            # Find top 5 distinct totals; include everyone at those levels
             distinct_totals = sorted(set(e[-1] for e in all_entries), reverse=True)
-            top5_totals = set(distinct_totals[:5])
-            eligible = [e for e in all_entries if e[-1] in top5_totals]
 
             lines = [f"*Weekly Leaderboard  •  {date_range}*", ""]
-            for rank_idx, total_val in enumerate(distinct_totals[:5]):
-                group = [e for e in eligible if e[-1] == total_val]
+            for rank_idx, total_val in enumerate(distinct_totals):
+                group = [e for e in all_entries if e[-1] == total_val]
                 medal = medals[rank_idx] if rank_idx < len(medals) else f"{rank_idx + 1}."
                 entries = []
                 for uid, stretches, workouts, gym, custom, live, other, total in group:
