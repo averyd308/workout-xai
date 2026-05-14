@@ -34,6 +34,8 @@ OTHER_ACTIVITY_EMOJIS = {
     # Court / field sports
     "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
     "badminton", "ping_pong",
+    # Climbing
+    "boulder",
     # Combat / other sports
     "boxing_glove", "martial_arts_uniform", "person_fencing",
     # Dance / cardio
