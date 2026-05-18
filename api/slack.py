@@ -924,23 +924,14 @@ def handle_menu_weekly_leaderboard(ack, body, client):
     ack()
     channel_id = body.get("channel", {}).get("id") or CHANNEL_ID
     try:
-        rows, monday = database.get_weekly_leaderboard()
+        rows, sunday, saturday = database.get_weekly_leaderboard(channel_id=channel_id)
         rows = _filter_bot_rows(rows)
         if not rows:
             client.chat_postMessage(channel=channel_id, text="No activity logged this week yet. Be the first!")
             return
-        medals = ["🥇", "🥈", "🥉", "4.", "5."]
-        today = date.today()
-        lines = [f"*Weekly Leaderboard  •  {monday.strftime('%b %d')} – {today.strftime('%b %d')}*", ""]
-        for i, (uid, stretches, workouts, custom, live) in enumerate(rows[:5]):
-            total = stretches + workouts + custom + live
-            parts = []
-            if stretches: parts.append(f":person_in_lotus_position: {stretches}")
-            if workouts:  parts.append(f":muscle: {workouts}")
-            if live:      parts.append(f":tv: {live}")
-            if custom:    parts.append(f":runner: {custom}")
-            lines.append(f"{medals[i]} <@{uid}>: *{total}* total  ›  {'  •  '.join(parts) or 'no activity'}")
-        client.chat_postMessage(channel=channel_id, text="\n".join(lines))
+        title = f"Weekly Leaderboard  •  {sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}"
+        result = _build_leaderboard_text(title, rows)
+        client.chat_postMessage(channel=channel_id, text=result["text"])
     except Exception as e:
         logging.error(f"menu_weekly_leaderboard error: {e}")
 
