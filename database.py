@@ -234,7 +234,7 @@ def get_weekly_leaderboard(channel_id=None, reference_date=None):
     saturday = sunday + timedelta(days=6)
     query = get_client().table("activity_logs").select("user_id,activity_type,description").gte("date", str(sunday)).lte("date", str(saturday))
     if channel_id:
-        query = query.or_(f"channel_id.eq.{channel_id},and(channel_id.is.null,activity_type.eq.custom)")
+        query = query.or_(f"channel_id.eq.{channel_id},and(channel_id.is.null,activity_type.in.(custom,other))")
     result = query.execute()
     stats = {}
     for row in result.data:
@@ -264,7 +264,7 @@ def get_weekly_custom_logs(user_id, since_date):
 def get_alltime_leaderboard(channel_id=None):
     query = get_client().table("activity_logs").select("user_id,activity_type,description")
     if channel_id:
-        query = query.or_(f"channel_id.eq.{channel_id},and(channel_id.is.null,activity_type.eq.custom)")
+        query = query.or_(f"channel_id.eq.{channel_id},and(channel_id.is.null,activity_type.in.(custom,other))")
     result = query.execute()
     stats = {}
     for row in result.data:
