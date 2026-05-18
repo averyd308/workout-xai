@@ -48,6 +48,8 @@ OTHER_ACTIVITY_EMOJIS = {
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     # Walking
     "walking", "walking-the-dog", "walking_the_dog",
+    # Chopping / woodcutting
+    "wood",
 }
 
 _bot_user_id = None
