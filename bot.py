@@ -206,6 +206,7 @@ def _post_weekend_to_channel(ch, today, force=False):
         return
 
     day_name = datetime.now().strftime("%A")  # "Saturday" or "Sunday"
+    stretch, workout = get_daily_options()
 
     blocks = [
         {
@@ -228,7 +229,8 @@ def _post_weekend_to_channel(ch, today, force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    ":person_in_lotus_position:  *Stretch*\n"
+                    f":person_in_lotus_position:  *{stretch['title']}*\n"
+                    f"_{stretch['description']}_\n"
                     "→ React with :person_in_lotus_position: if you stretched"
                 ),
             },
@@ -239,7 +241,8 @@ def _post_weekend_to_channel(ch, today, force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    ":muscle:  *Workout*\n"
+                    f":muscle:  *{workout['title']}*\n"
+                    f"_{workout['description']}_\n"
                     "→ React with :muscle: if you worked out"
                 ),
             },
@@ -286,7 +289,7 @@ def _post_weekend_to_channel(ch, today, force=False):
         unfurl_links=False,
         unfurl_media=False,
     )
-    database.save_daily_post(today, result["ts"], ch, f"{day_name} stretch", f"{day_name} workout")
+    database.save_daily_post(today, result["ts"], ch, stretch["title"], workout["title"])
     logging.info(f"Weekend post sent to {ch}: ts={result['ts']}")
 
     # Auto-react so users can tap the emojis directly

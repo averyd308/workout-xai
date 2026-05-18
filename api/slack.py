@@ -187,7 +187,9 @@ def handle_mystats(ack, command):
     gym = stats.get("gym", 0)
     custom = stats.get("custom", 0)
     live = stats.get("live", 0)
-    total = sum(stats.values())
+    other = stats.get("other", {})
+    other_total = sum(other.values()) if isinstance(other, dict) else other
+    total = stretch + workout + gym + custom + live + other_total
     date_range = f"{sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}"
     lines = [
         f"*Your weekly stats ({date_range}):*",
@@ -196,6 +198,13 @@ def handle_mystats(ack, command):
         f":man-lifting-weights:  Gym sessions: *{gym}*",
         f":tv:  Live workouts: *{live}*",
         f":runner:  Custom activities: *{custom}*",
+    ]
+    if isinstance(other, dict):
+        for emoji, count in other.items():
+            lines.append(f"{emoji}  Other: *{count}*")
+    elif other_total:
+        lines.append(f":zap:  Other activities: *{other_total}*")
+    lines += [
         "─────────────────────",
         f"Total: *{total}* activities this week",
     ]

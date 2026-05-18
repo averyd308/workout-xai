@@ -188,7 +188,7 @@ def get_user_weekly_stats(user_id, channel_id=None):
     saturday = sunday + timedelta(days=6)
     query = (
         get_client().table("activity_logs")
-        .select("activity_type")
+        .select("activity_type,description")
         .eq("user_id", user_id)
         .gte("date", str(sunday))
         .lte("date", str(saturday))
@@ -199,7 +199,13 @@ def get_user_weekly_stats(user_id, channel_id=None):
     stats = {}
     for row in result.data:
         t = row["activity_type"]
-        stats[t] = stats.get(t, 0) + 1
+        if t == "other":
+            desc = row.get("description", "")
+            if "other" not in stats:
+                stats["other"] = {}
+            stats["other"][desc] = stats["other"].get(desc, 0) + 1
+        else:
+            stats[t] = stats.get(t, 0) + 1
     return stats, sunday, saturday
 
 
