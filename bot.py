@@ -33,6 +33,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "skier", "snowboarder", "person_climbing", "mountain_snow", "mountain", "hiking_boot", "hiking-boot",
     # Court / field sports
     "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
+    "handball",
     "badminton", "ping_pong",
     # Climbing
     "boulder", "rock",

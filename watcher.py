@@ -42,6 +42,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "swimmer", "surfer", "rowing",
     "skier", "snowboarder", "person_climbing", "mountain_snow", "hiking_boot",
     "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
+    "handball",
     "badminton", "ping_pong",
     "boxing_glove", "martial_arts_uniform", "person_fencing",
     "dancer", "man_dancing", "golf",
