@@ -36,7 +36,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "handball",
     "badminton", "ping_pong",
     # Climbing
-    "boulder", "rock",
+    "boulder", "rock", "ladder",
     # Combat / other sports
     "boxing_glove", "martial_arts_uniform", "person_fencing",
     # Dance / cardio
