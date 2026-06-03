@@ -102,7 +102,7 @@ def _post_daily_to_channel(channel_id, force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f":person_in_lotus_position:  {stretch['title']}\n"
+                    f":woman_in_lotus_position:  {stretch['title']}\n"
                     f"{_md_to_slack(stretch['description'])}"
                 ),
             },
@@ -144,7 +144,7 @@ def _post_daily_to_channel(channel_id, force=False):
                 "text": (
                     "*How to log a workout:*\n"
                     "• React to log your activity — you can do one or more!\n"
-                    "• React with :muscle: / :person_in_lotus_position: / :runner: when done\n"
+                    "• React with :muscle: / :woman_in_lotus_position: / :runner: when done\n"
                     "• Hit the gym? React with :man-lifting-weights: or :woman-lifting-weights:\n"
                     "• Do a workout you don't see here? React with an appropriate emoji and it'll get logged!"
                 ),
@@ -232,9 +232,9 @@ def _post_weekend_to_channel(ch, today, force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f":person_in_lotus_position:  *{stretch['title']}*\n"
+                    f":woman_in_lotus_position:  *{stretch['title']}*\n"
                     f"_{stretch['description']}_\n"
-                    "→ React with :person_in_lotus_position: if you stretched"
+                    "→ React with :woman_in_lotus_position: if you stretched"
                 ),
             },
         },
@@ -346,7 +346,7 @@ def post_weekly_leaderboard(channel_id=None):
                 for uid, stretches, workouts, gym, custom, live, other, total in group:
                     parts = []
                     if stretches:
-                        parts.append(f":person_in_lotus_position: {stretches}")
+                        parts.append(f":woman_in_lotus_position: {stretches}")
                     if workouts:
                         parts.append(f":muscle: {workouts}")
                     if gym:
@@ -433,7 +433,7 @@ def send_reminder_dm(client, user_id):
         body = (
             f":alarm_clock: *Workout reminder!*\n\n"
             f"Don't forget to check today's movement options in {channels_mention}:\n"
-            f":person_in_lotus_position: *{stretch}*\n"
+            f":woman_in_lotus_position: *{stretch}*\n"
             f":muscle: *{workout}*\n\n"
             f"React to the post when you're done to log your activity!"
         )

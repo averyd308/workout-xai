@@ -71,7 +71,7 @@ def handle_reaction_added(event):
     stretch_title = post["stretch_option"]
     workout_title = post["workout_option"]
 
-    if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::"):
+    if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
         logged = database.log_activity(user_id, "stretch", stretch_title, channel_id=post_channel)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
@@ -79,7 +79,7 @@ def handle_reaction_added(event):
             bolt_app.client.chat_postEphemeral(
                 channel=post_channel,
                 user=user_id,
-                text=f":person_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} in this channel. Don't see it? Message Avery!",
+                text=f":woman_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} in this channel. Don't see it? Message Avery!",
             )
 
     elif emoji == WORKOUT_EMOJI:
@@ -149,7 +149,7 @@ def handle_reaction_removed(event):
                 database.remove_activity(user_id, "live", description=f"Live workout ({session['id']})")
         return
 
-    if emoji == STRETCH_EMOJI:
+    if emoji == STRETCH_EMOJI or emoji.startswith("woman_in_lotus_position"):
         database.remove_activity(user_id, "stretch")
     elif emoji == WORKOUT_EMOJI:
         database.remove_activity(user_id, "workout")
@@ -193,7 +193,7 @@ def handle_mystats(ack, command):
     date_range = f"{sunday.strftime('%b %d')} – {saturday.strftime('%b %d')}"
     lines = [
         f"*Your weekly stats ({date_range}):*",
-        f":person_in_lotus_position:  Stretch sessions: *{stretch}*",
+        f":woman_in_lotus_position:  Stretch sessions: *{stretch}*",
         f":muscle:  Workouts: *{workout}*",
         f":man-lifting-weights:  Gym sessions: *{gym}*",
         f":tv:  Live workouts: *{live}*",
@@ -243,7 +243,7 @@ def _build_leaderboard_text(title, rows):
         medal = medals[i] if i < 3 else f"{i + 1}."
         parts = []
         if stretches:
-            parts.append(f":person_in_lotus_position: {stretches}")
+            parts.append(f":woman_in_lotus_position: {stretches}")
         if workouts:
             parts.append(f":muscle: {workouts}")
         if gym:
@@ -350,7 +350,7 @@ def handle_weekly_leaderboard(ack, command, respond):
         for user_id, stretches, workouts, gym, custom, live, other, total in group:
             parts = []
             if stretches:
-                parts.append(f":person_in_lotus_position: {stretches}")
+                parts.append(f":woman_in_lotus_position: {stretches}")
             if workouts:
                 parts.append(f":muscle: {workouts}")
             if gym:
@@ -419,7 +419,7 @@ def handle_resync(ack, command, respond):
             for user_id in reaction.get("users", []):
                 if user_id == bot_id:
                     continue
-                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::"):
+                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
                     entry = ("stretch", post["stretch_option"])
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     entry = ("workout", post["workout_option"])
@@ -530,7 +530,7 @@ def handle_backfill(ack, command, client):
             for user_id in reaction.get("users", []):
                 if user_id == bot_id:
                     continue
-                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::"):
+                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
                     atype, desc = "stretch", post.get("stretch_option", "")
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     atype, desc = "workout", post.get("workout_option", "")
@@ -908,7 +908,7 @@ def handle_menu_my_stats(ack, body, client):
         total   = sum(stats.values())
         client.chat_postEphemeral(channel=channel_id, user=user_id, text=(
             "*Your activity stats (this channel):*\n"
-            f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
+            f":woman_in_lotus_position:  Stretch sessions: *{stretch}*\n"
             f":muscle:  Workouts: *{workout}*\n"
             f":tv:  Live workouts: *{live}*\n"
             f":runner:  Custom activities: *{custom}*\n"

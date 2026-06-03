@@ -104,7 +104,7 @@ def main():
                 if user_id == bot_id:
                     continue
 
-                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::"):
+                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
                     activity_type, description = "stretch", stretch_title
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     activity_type, description = "workout", workout_title

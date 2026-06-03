@@ -54,7 +54,7 @@ OTHER_ACTIVITY_EMOJIS = {
 def classify_emoji(name: str):
     """Map a reaction name to (activity_type, description), or (None, None) to skip."""
     base = name.split("::")[0]  # strip skin-tone suffixes like muscle::skin-tone-3
-    if base == STRETCH_EMOJI:
+    if base == STRETCH_EMOJI or base == "woman_in_lotus_position":
         return "stretch", base
     if base == WORKOUT_EMOJI or base.startswith("muscle"):
         return "workout", base
