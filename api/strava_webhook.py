@@ -23,7 +23,7 @@ ACTIVITY_EMOJIS = {
     "Swim": ":swimmer:",
     "Hike": ":national_park:",
     "WeightTraining": ":muscle:",
-    "Yoga": ":woman_in_lotus_position:",
+    "Yoga": ":person_in_lotus_position:",
     "Workout": ":muscle:",
     "Elliptical": ":muscle:",
     "StairStepper": ":muscle:",

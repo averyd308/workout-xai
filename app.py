@@ -58,9 +58,9 @@ def post_daily_message(force=False):
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f":woman_in_lotus_position:  *{stretch['title']}*\n"
+                    f":person_in_lotus_position:  *{stretch['title']}*\n"
                     f"_{stretch['description']}_\n"
-                    f"→ React with :woman_in_lotus_position: when done"
+                    f"→ React with :person_in_lotus_position: when done"
                 ),
             },
         },
@@ -121,7 +121,7 @@ def handle_reaction_added(event):
             app.client.chat_postEphemeral(
                 channel=CHANNEL_ID,
                 user=user_id,
-                text=f":woman_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} total.",
+                text=f":person_in_lotus_position: Nice stretch! You've logged *{count}* stretching session{'s' if count != 1 else ''} total.",
             )
 
     elif emoji == WORKOUT_EMOJI:
@@ -199,7 +199,7 @@ def handle_mystats(ack, command, respond):
 
     respond(
         f"*Your activity stats (all time):*\n"
-        f":woman_in_lotus_position:  Stretch sessions: *{stretch}*\n"
+        f":person_in_lotus_position:  Stretch sessions: *{stretch}*\n"
         f":muscle:  Workouts: *{workout}*\n"
         f":man-lifting-weights:  Gym sessions: *{gym}*\n"
         f":walking:  Walks: *{walk}*\n"
