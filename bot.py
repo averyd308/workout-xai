@@ -47,6 +47,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "skeleton-vrtv", "skeleton_vrtv",
     # General fitness
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
+    "male-abs", "female-abs",
     # Walking
     "walking", "walking-the-dog", "walking_the_dog",
     # Chopping / woodcutting
