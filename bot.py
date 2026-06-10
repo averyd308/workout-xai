@@ -49,8 +49,8 @@ OTHER_ACTIVITY_EMOJIS = {
     # General fitness
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     "male-abs", "female-abs",
-    # Walking (man-walking handled via MAN_WALKING_EMOJI constant)
-    "walking", "walking-the-dog", "walking_the_dog",
+    # Walking
+    "walking", "walking-the-dog", "walking_the_dog", "man-walking",
     # Chopping / woodcutting
     "wood",
     # Yard work
