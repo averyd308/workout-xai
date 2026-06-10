@@ -122,9 +122,7 @@ def handle_reaction_added(event):
             )
 
     elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
-        logging.info(f"DEBUG man-walking branch hit: emoji={emoji!r} post_channel={post_channel!r}")
         logged = database.log_activity(user_id, "other", ":walking:", channel_id=post_channel)
-        logging.info(f"DEBUG log_activity returned: {logged!r}")
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("other", 0)
