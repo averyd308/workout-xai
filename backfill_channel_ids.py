@@ -118,6 +118,13 @@ def main():
                     activity_type, description = "custom", ""
                 elif emoji == "man-walking" or emoji.startswith("man-walking::"):
                     activity_type, description = "other", ":walking:"
+                    # Normalize any existing row stored under the old emoji description
+                    old_desc = f":{emoji}:"
+                    result = db.table("activity_logs").update({"description": ":walking:"}).eq("user_id", user_id).eq("date", post_date).eq("activity_type", "other").eq("description", old_desc).execute()
+                    if result.data:
+                        total_patched += len(result.data)
+                        logging.info(f"  Normalized man-walking desc for {user_id} on {post_date}")
+                        continue
                 elif emoji in OTHER_ACTIVITY_EMOJIS:
                     activity_type, description = "other", f":{emoji}:"
                 else:
