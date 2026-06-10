@@ -50,6 +50,7 @@ def handle_reaction_added(event):
 
     post = database.get_post_by_ts(event["item"]["ts"])
     emoji = event["reaction"]
+    logging.info(f"reaction_added: emoji={emoji!r} user={user_id}")
 
     if not post:
         if emoji == LIVE_EMOJI:
