@@ -14,7 +14,7 @@ import re
 import time as _time
 
 import database
-from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS, post_daily_message, post_weekend_message, parse_reminder_input, get_bot_user_id
+from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, MAN_WALKING_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS, post_daily_message, post_weekend_message, parse_reminder_input, get_bot_user_id
 
 LIVE_EMOJI = "tv"
 
@@ -122,7 +122,7 @@ def handle_reaction_added(event):
                 text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} in this channel. Don't see it? Message Avery!",
             )
 
-    elif emoji in OTHER_ACTIVITY_EMOJIS or emoji.startswith("man-walking::"):
+    elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::") or emoji in OTHER_ACTIVITY_EMOJIS:
         logged = database.log_activity(user_id, "other", f":{emoji}:", channel_id=post_channel)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
@@ -158,7 +158,7 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "custom")
     elif emoji in GYM_EMOJIS:
         database.remove_activity(user_id, "gym")
-    elif emoji in OTHER_ACTIVITY_EMOJIS or emoji.startswith("man-walking::"):
+    elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::") or emoji in OTHER_ACTIVITY_EMOJIS:
         database.remove_activity(user_id, "other", description=f":{emoji}:")
 
 

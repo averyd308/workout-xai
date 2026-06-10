@@ -19,6 +19,7 @@ CHANNEL_ID = CHANNEL_IDS[0]  # primary channel; used as fallback
 STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
 CUSTOM_EMOJI = "runner"
+MAN_WALKING_EMOJI = "man-walking"
 GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
 
 # Emojis that count as "other" activity when reacted on the daily post.
@@ -48,8 +49,8 @@ OTHER_ACTIVITY_EMOJIS = {
     # General fitness
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     "male-abs", "female-abs",
-    # Walking
-    "walking", "walking-the-dog", "walking_the_dog", "man-walking",
+    # Walking (man-walking handled via MAN_WALKING_EMOJI constant)
+    "walking", "walking-the-dog", "walking_the_dog",
     # Chopping / woodcutting
     "wood",
     # Yard work
