@@ -49,9 +49,11 @@ OTHER_ACTIVITY_EMOJIS = {
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     "male-abs", "female-abs",
     # Walking
-    "walking", "walking-the-dog", "walking_the_dog",
+    "walking", "walking-the-dog", "walking_the_dog", "man-walking",
     # Chopping / woodcutting
     "wood",
+    # Yard work
+    "lawnmower-unscreen",
 }
 
 _bot_user_id = None
