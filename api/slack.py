@@ -50,7 +50,6 @@ def handle_reaction_added(event):
 
     post = database.get_post_by_ts(event["item"]["ts"])
     emoji = event["reaction"]
-    logging.info(f"reaction_added: emoji={emoji!r} user={user_id} post_found={post is not None}")
 
     if not post:
         if emoji == LIVE_EMOJI:
@@ -124,7 +123,6 @@ def handle_reaction_added(event):
 
     elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::") or emoji in OTHER_ACTIVITY_EMOJIS:
         logged = database.log_activity(user_id, "other", f":{emoji}:", channel_id=post_channel)
-        logging.info(f"other branch: emoji={emoji!r} logged={logged}")
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("other", 0)
