@@ -116,7 +116,9 @@ def main():
                     if not custom_title:
                         continue
                     activity_type, description = "custom", ""
-                elif emoji in OTHER_ACTIVITY_EMOJIS or emoji.startswith("man-walking::"):
+                elif emoji == "man-walking" or emoji.startswith("man-walking::"):
+                    activity_type, description = "other", ":walking:"
+                elif emoji in OTHER_ACTIVITY_EMOJIS:
                     activity_type, description = "other", f":{emoji}:"
                 else:
                     continue

@@ -121,7 +121,18 @@ def handle_reaction_added(event):
                 text=f":man-lifting-weights: Gym session logged! You've hit the gym *{count}* {'time' if count == 1 else 'times'} in this channel. Don't see it? Message Avery!",
             )
 
-    elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::") or emoji in OTHER_ACTIVITY_EMOJIS:
+    elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
+        logged = database.log_activity(user_id, "other", ":walking:", channel_id=post_channel)
+        if logged:
+            stats = database.get_user_stats(user_id, channel_id=post_channel)
+            count = stats.get("other", 0)
+            bolt_app.client.chat_postEphemeral(
+                channel=post_channel,
+                user=user_id,
+                text=f":walking: Walk logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
+            )
+
+    elif emoji in OTHER_ACTIVITY_EMOJIS:
         logged = database.log_activity(user_id, "other", f":{emoji}:", channel_id=post_channel)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
@@ -157,7 +168,9 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "custom")
     elif emoji in GYM_EMOJIS:
         database.remove_activity(user_id, "gym")
-    elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::") or emoji in OTHER_ACTIVITY_EMOJIS:
+    elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
+        database.remove_activity(user_id, "other", description=":walking:")
+    elif emoji in OTHER_ACTIVITY_EMOJIS:
         database.remove_activity(user_id, "other", description=f":{emoji}:")
 
 
