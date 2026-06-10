@@ -73,6 +73,15 @@ def main():
     db = database.get_client()
     logging.info(f"Bot user ID: {bot_id}")
 
+    # Normalize any existing man-walking skin-tone descriptions directly in the DB
+    result = db.table("activity_logs").select("id,description").eq("activity_type", "other").like("description", ":man-walking::%").execute()
+    normalized = 0
+    for row in result.data:
+        db.table("activity_logs").update({"description": ":walking:"}).eq("id", row["id"]).execute()
+        normalized += 1
+    if normalized:
+        logging.info(f"Normalized {normalized} man-walking skin-tone description(s) to :walking:")
+
     posts = database.get_all_posts()
     logging.info(f"Scanning {len(posts)} daily posts")
 
