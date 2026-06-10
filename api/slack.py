@@ -444,6 +444,8 @@ def handle_resync(ack, command, respond):
                     entry = ("custom", "")
                 elif emoji == LIVE_EMOJI:
                     continue
+                elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
+                    entry = ("other", ":walking:")
                 elif emoji in OTHER_ACTIVITY_EMOJIS:
                     entry = ("other", f":{emoji}:")
                 else:
