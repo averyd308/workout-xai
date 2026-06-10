@@ -38,7 +38,9 @@ OTHER_ACTIVITY_EMOJIS = {
     "dancer", "man_dancing",
     "golf",
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
-    "walking",
+    "walking", "walking-the-dog", "walking_the_dog", "man-walking",
+    "wood",
+    "lawnmower-unscreen",
 }
 
 
@@ -114,7 +116,7 @@ def main():
                     if not custom_title:
                         continue
                     activity_type, description = "custom", ""
-                elif emoji in OTHER_ACTIVITY_EMOJIS:
+                elif emoji in OTHER_ACTIVITY_EMOJIS or emoji.startswith("man-walking::"):
                     activity_type, description = "other", f":{emoji}:"
                 else:
                     continue
