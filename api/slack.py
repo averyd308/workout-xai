@@ -71,7 +71,7 @@ def handle_reaction_added(event):
     stretch_title = post["stretch_option"]
     workout_title = post["workout_option"]
 
-    if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position") or emoji == "stretching" or emoji.startswith("stretching::"):
+    if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
         logged = database.log_activity(user_id, "stretch", stretch_title, channel_id=post_channel)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
@@ -160,7 +160,7 @@ def handle_reaction_removed(event):
                 database.remove_activity(user_id, "live", description=f"Live workout ({session['id']})")
         return
 
-    if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position") or emoji == "stretching" or emoji.startswith("stretching::"):
+    if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
         database.remove_activity(user_id, "stretch")
     elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
         database.remove_activity(user_id, "workout")
@@ -432,7 +432,7 @@ def handle_resync(ack, command, respond):
             for user_id in reaction.get("users", []):
                 if user_id == bot_id:
                     continue
-                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position") or emoji == "stretching" or emoji.startswith("stretching::"):
+                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
                     entry = ("stretch", post["stretch_option"])
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     entry = ("workout", post["workout_option"])
@@ -545,7 +545,7 @@ def handle_backfill(ack, command, client):
             for user_id in reaction.get("users", []):
                 if user_id == bot_id:
                     continue
-                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position") or emoji == "stretching" or emoji.startswith("stretching::"):
+                if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
                     atype, desc = "stretch", post.get("stretch_option", "")
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     atype, desc = "workout", post.get("workout_option", "")

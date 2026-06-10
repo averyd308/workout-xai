@@ -57,6 +57,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "lawnmower-unscreen",
     # Custom workout emojis
     "exercise-workout-bike-dance",
+    "strretching",
 }
 
 _bot_user_id = None

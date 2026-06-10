@@ -42,6 +42,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "wood",
     "lawnmower-unscreen",
     "exercise-workout-bike-dance",
+    "strretching",
 }
 
 
