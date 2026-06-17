@@ -50,7 +50,13 @@ def reminders_cron():
 
 @flask_app.route("/api/weekend-cron", methods=["GET", "POST"])
 def weekend_cron():
-    if os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
+    cron_secret = os.environ.get("CRON_SECRET")
+    if cron_secret:
+        vercel_ok = request.headers.get("x-vercel-cron") == "1"
+        secret_ok = request.headers.get("x-cron-secret") == cron_secret
+        if not (vercel_ok or secret_ok):
+            return "Unauthorized", 401
+    elif os.environ.get("VERCEL") and request.headers.get("x-vercel-cron") != "1":
         return "Unauthorized", 401
     post_weekend_message()
     return "ok"

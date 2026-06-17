@@ -12,4 +12,4 @@ jobs:
       - name: Trigger weekend post endpoint
         run: |
           curl -sf -X GET "${{ secrets.VERCEL_APP_URL }}/api/weekend-cron" \
-            -H "x-vercel-cron: 1"
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
