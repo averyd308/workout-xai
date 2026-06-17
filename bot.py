@@ -58,6 +58,8 @@ OTHER_ACTIVITY_EMOJIS = {
     # Custom workout emojis
     "exercise-workout-bike-dance",
     "strretching",
+    # Cardio / heart rate
+    "anatomical_heart",
 }
 
 _bot_user_id = None
