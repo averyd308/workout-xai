@@ -110,7 +110,7 @@ def handle_reaction_added(event):
                     text=f":runner: Logged! You did the custom workout on *{date_display}*. That's *{count}* custom {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
                 )
 
-    elif emoji in GYM_EMOJIS:
+    elif emoji in GYM_EMOJIS or emoji.startswith("man-lifting-weights::") or emoji.startswith("woman-lifting-weights::"):
         logged = database.log_activity(user_id, "gym", "Gym workout", channel_id=post_channel)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
@@ -132,15 +132,16 @@ def handle_reaction_added(event):
                 text=f":walking: Walk logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
             )
 
-    elif emoji in OTHER_ACTIVITY_EMOJIS:
-        logged = database.log_activity(user_id, "other", f":{emoji}:", channel_id=post_channel)
+    elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+        base = emoji.split("::")[0]
+        logged = database.log_activity(user_id, "other", f":{base}:", channel_id=post_channel)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("other", 0)
             bolt_app.client.chat_postEphemeral(
                 channel=post_channel,
                 user=user_id,
-                text=f":{emoji}: Activity logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
+                text=f":{base}: Activity logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
             )
 
 
@@ -166,12 +167,12 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "workout")
     elif emoji == CUSTOM_EMOJI:
         database.remove_activity(user_id, "custom")
-    elif emoji in GYM_EMOJIS:
+    elif emoji in GYM_EMOJIS or emoji.startswith("man-lifting-weights::") or emoji.startswith("woman-lifting-weights::"):
         database.remove_activity(user_id, "gym")
     elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
         database.remove_activity(user_id, "other", description=":walking:")
-    elif emoji in OTHER_ACTIVITY_EMOJIS:
-        database.remove_activity(user_id, "other", description=f":{emoji}:")
+    elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+        database.remove_activity(user_id, "other", description=f":{emoji.split('::')[0]}:")
 
 
 # ── Slash Commands ─────────────────────────────────────────────────────────────
@@ -436,7 +437,7 @@ def handle_resync(ack, command, respond):
                     entry = ("stretch", post["stretch_option"])
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     entry = ("workout", post["workout_option"])
-                elif emoji in GYM_EMOJIS:
+                elif emoji in GYM_EMOJIS or emoji.startswith("man-lifting-weights::") or emoji.startswith("woman-lifting-weights::"):
                     entry = ("gym", "Gym workout")
                 elif emoji == CUSTOM_EMOJI:
                     if not custom_title:
@@ -446,8 +447,8 @@ def handle_resync(ack, command, respond):
                     continue
                 elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
                     entry = ("other", ":walking:")
-                elif emoji in OTHER_ACTIVITY_EMOJIS:
-                    entry = ("other", f":{emoji}:")
+                elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+                    entry = ("other", f":{emoji.split('::')[0]}:")
                 else:
                     continue
                 expected.setdefault(user_id, set()).add(entry)
@@ -549,14 +550,14 @@ def handle_backfill(ack, command, client):
                     atype, desc = "stretch", post.get("stretch_option", "")
                 elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
                     atype, desc = "workout", post.get("workout_option", "")
-                elif emoji in GYM_EMOJIS:
+                elif emoji in GYM_EMOJIS or emoji.startswith("man-lifting-weights::") or emoji.startswith("woman-lifting-weights::"):
                     atype, desc = "gym", "Gym workout"
                 elif emoji == CUSTOM_EMOJI:
                     if not custom_title:
                         continue
                     atype, desc = "custom", ""
-                elif emoji in OTHER_ACTIVITY_EMOJIS:
-                    atype, desc = "other", f":{emoji}:"
+                elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+                    atype, desc = "other", f":{emoji.split('::')[0]}:"
                 else:
                     continue
 
