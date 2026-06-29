@@ -48,6 +48,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "boxing_glove", "martial_arts_uniform", "person_fencing",
     "dancer", "man_dancing", "golf",
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
+    "elliptical",
 }
 
 

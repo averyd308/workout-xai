@@ -59,7 +59,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "exercise-workout-bike-dance",
     "strretching",
     # Cardio / heart rate
-    "anatomical_heart",
+    "anatomical_heart", "elliptical",
 }
 
 _bot_user_id = None
