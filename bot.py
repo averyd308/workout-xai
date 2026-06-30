@@ -27,7 +27,7 @@ GYM_EMOJIS = ["man-lifting-weights", "woman-lifting-weights"]
 # Add any new fitness emojis here to have them tracked.
 OTHER_ACTIVITY_EMOJIS = {
     # Cycling
-    "bike", "bicyclist", "mountain_bicyclist",
+    "bike", "bicyclist", "mountain_bicyclist", "man-mountain-biking",
     # Water
     "swimmer", "woman-swimming", "man-swimming", "surfer", "rowing",
     # Snow / outdoor
@@ -52,7 +52,7 @@ OTHER_ACTIVITY_EMOJIS = {
     # Walking
     "walking", "walking-the-dog", "walking_the_dog", "man-walking",
     # Chopping / woodcutting
-    "wood",
+    "wood", "carpentry_saw",
     # Yard work
     "lawnmower-unscreen",
     # Custom workout emojis
