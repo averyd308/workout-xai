@@ -41,7 +41,7 @@ OTHER_ACTIVITY_EMOJIS = {
     # Combat / other sports
     "boxing_glove", "martial_arts_uniform", "person_fencing",
     # Dance / cardio
-    "dancer", "man_dancing",
+    "dancer", "man_dancing", "dancingpanda",
     # Golf / leisure sport
     "golf", "man-golfing",
     # VR / gaming fitness
