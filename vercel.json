@@ -1,4 +1,5 @@
 {
+  "framework": null,
   "rewrites": [
     { "source": "/api/slack", "destination": "/api/slack" },
     { "source": "/api/cron", "destination": "/api/cron" },
