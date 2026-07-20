@@ -36,6 +36,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
     "handball",
     "badminton", "ping_pong",
+    "squash-woman", "squash-man",
     # Climbing
     "boulder", "rock", "ladder",
     # Combat / other sports
