@@ -70,8 +70,8 @@ def save_daily_post(date_str, message_ts, channel_id, stretch_option, workout_op
     }, on_conflict="date").execute()
 
 
-def get_today_post(channel_id=None):
-    query = get_client().table("daily_posts").select("*").eq("date", str(date.today()))
+def get_today_post(channel_id=None, date_str=None):
+    query = get_client().table("daily_posts").select("*").eq("date", date_str or str(date.today()))
     if channel_id:
         query = query.eq("channel_id", channel_id)
     result = query.execute()

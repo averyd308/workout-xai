@@ -3,10 +3,18 @@ import re
 import logging
 from datetime import datetime
 
+import pytz
 from slack_bolt import App
 
 import database
 import workouts
+
+DEFAULT_TIMEZONE = os.environ.get("TIMEZONE", "America/New_York")
+
+
+def _local_now():
+    """Current time in the app's configured timezone, not the server's (UTC) clock."""
+    return datetime.now(pytz.timezone(DEFAULT_TIMEZONE))
 
 bolt_app = App(
     token=os.environ["SLACK_BOT_TOKEN"],
@@ -111,11 +119,11 @@ def post_daily_message(channel_id=None, force=False):
 
 
 def _post_daily_to_channel(channel_id, force=False):
-    if not force and database.get_today_post(channel_id):
+    today = str(_local_now().date())
+    if not force and database.get_today_post(channel_id, date_str=today):
         logging.info(f"Daily post already sent today to {channel_id}, skipping.")
         return
 
-    today = str(datetime.now().date())
     scheduled = database.get_scheduled_options(today)
     if scheduled and scheduled[0] and scheduled[2]:
         stretch = {"title": scheduled[0], "description": scheduled[1] or ""}
@@ -229,21 +237,19 @@ def _post_daily_to_channel(channel_id, force=False):
 
 def post_weekend_message(channel_id=None, force=False):
     """Post a weekend check-in message on Saturday or Sunday."""
-    from datetime import datetime
     channels = [channel_id] if channel_id else CHANNEL_IDS
-    today = str(datetime.now().date())
+    today = str(_local_now().date())
 
     for ch in channels:
         _post_weekend_to_channel(ch, today, force)
 
 
 def _post_weekend_to_channel(ch, today, force=False):
-    from datetime import datetime
-    if not force and database.get_today_post(ch):
+    if not force and database.get_today_post(ch, date_str=today):
         logging.info(f"Weekend post already sent today to {ch}, skipping.")
         return
 
-    day_name = datetime.now().strftime("%A")  # "Saturday" or "Sunday"
+    day_name = _local_now().strftime("%A")  # "Saturday" or "Sunday"
     stretch, workout = get_daily_options()
 
     blocks = [
