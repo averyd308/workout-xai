@@ -68,11 +68,12 @@ def handle_reaction_added(event):
         return
 
     post_channel = post.get("channel_id") or CHANNEL_ID
+    post_date = post["date"]
     stretch_title = post["stretch_option"]
     workout_title = post["workout_option"]
 
     if emoji == STRETCH_EMOJI or emoji.startswith("person_in_lotus_position::") or emoji.startswith("woman_in_lotus_position"):
-        logged = database.log_activity(user_id, "stretch", stretch_title, channel_id=post_channel)
+        logged = database.log_activity(user_id, "stretch", stretch_title, channel_id=post_channel, date_str=post_date)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("stretch", 0)
@@ -83,7 +84,7 @@ def handle_reaction_added(event):
             )
 
     elif emoji == WORKOUT_EMOJI or emoji.startswith("muscle::"):
-        logged = database.log_activity(user_id, "workout", workout_title, channel_id=post_channel)
+        logged = database.log_activity(user_id, "workout", workout_title, channel_id=post_channel, date_str=post_date)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("workout", 0)
@@ -97,7 +98,7 @@ def handle_reaction_added(event):
         scheduled = database.get_scheduled_options(post["date"])
         custom_title = scheduled[4] if scheduled and scheduled[4] else None
         if custom_title:
-            logged = database.log_activity(user_id, "custom", "", channel_id=post_channel)
+            logged = database.log_activity(user_id, "custom", "", channel_id=post_channel, date_str=post_date)
             if logged:
                 from datetime import datetime as dt
                 d = dt.strptime(post["date"], "%Y-%m-%d")
@@ -111,7 +112,7 @@ def handle_reaction_added(event):
                 )
 
     elif emoji in GYM_EMOJIS or emoji.startswith("man-lifting-weights::") or emoji.startswith("woman-lifting-weights::"):
-        logged = database.log_activity(user_id, "gym", "Gym workout", channel_id=post_channel)
+        logged = database.log_activity(user_id, "gym", "Gym workout", channel_id=post_channel, date_str=post_date)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("gym", 0)
@@ -122,7 +123,7 @@ def handle_reaction_added(event):
             )
 
     elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
-        logged = database.log_activity(user_id, "other", ":walking:", channel_id=post_channel)
+        logged = database.log_activity(user_id, "other", ":walking:", channel_id=post_channel, date_str=post_date)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("other", 0)
@@ -134,7 +135,7 @@ def handle_reaction_added(event):
 
     elif emoji.split("::")[0] not in NON_ACTIVITY_EMOJIS:
         base = emoji.split("::")[0]
-        logged = database.log_activity(user_id, "other", f":{base}:", channel_id=post_channel)
+        logged = database.log_activity(user_id, "other", f":{base}:", channel_id=post_channel, date_str=post_date)
         if logged:
             stats = database.get_user_stats(user_id, channel_id=post_channel)
             count = stats.get("other", 0)
