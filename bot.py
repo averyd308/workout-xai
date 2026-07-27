@@ -51,7 +51,7 @@ OTHER_ACTIVITY_EMOJIS = {
     "athletic_shoe", "trophy", "sports_medal", "medal_sports",
     "male-abs", "female-abs",
     # Walking
-    "walking", "walking-the-dog", "walking_the_dog", "man-walking",
+    "walking", "walking-the-dog", "walking_the_dog", "man-walking", "person_walking_facing_right",
     # Chopping / woodcutting
     "wood", "carpentry_saw",
     # Yard work
@@ -61,6 +61,31 @@ OTHER_ACTIVITY_EMOJIS = {
     "strretching",
     # Cardio / heart rate
     "anatomical_heart", "elliptical",
+}
+
+# Generic/social reactions that should NOT count as a logged activity even though
+# we otherwise track "any emoji reaction" on the daily post as an "other" activity.
+# Add to this list (don't add to OTHER_ACTIVITY_EMOJIS above) if people start using
+# some other non-fitness emoji to react to the daily post.
+NON_ACTIVITY_EMOJIS = {
+    # Approval / acknowledgement
+    "+1", "thumbsup", "-1", "thumbsdown", "ok_hand", "raised_hands", "clap",
+    "white_check_mark", "heavy_check_mark", "ballot_box_with_check", "x", "heavy_multiplication_x",
+    "pray", "raised_hand", "wave", "salute", "saluting_face",
+    # Pointing / attention
+    "eyes", "point_up", "point_up_2", "point_down", "point_left", "point_right",
+    # Celebration
+    "tada", "confetti_ball", "partying_face",
+    # Faces / emotion
+    "joy", "rofl", "laughing", "smile", "smiley", "grinning", "grin",
+    "slightly_smiling_face", "thinking_face", "sob", "cry", "scream", "flushed",
+    "sweat_smile", "wink", "heart_eyes", "star-struck", "hushed", "astonished", "open_mouth",
+    "upside_down_face", "sunglasses", "face_with_rolling_eyes",
+    # Hearts
+    "heart", "hearts", "sparkling_heart", "orange_heart", "yellow_heart",
+    "green_heart", "blue_heart", "purple_heart", "black_heart", "broken_heart",
+    # Fire / stars / misc social reactions
+    "fire", "100", "star", "star2", "sparkles", "boom", "eyes",
 }
 
 _bot_user_id = None

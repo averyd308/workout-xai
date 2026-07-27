@@ -14,7 +14,7 @@ import re
 import time as _time
 
 import database
-from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, MAN_WALKING_EMOJI, GYM_EMOJIS, OTHER_ACTIVITY_EMOJIS, post_daily_message, post_weekend_message, parse_reminder_input, get_bot_user_id
+from bot import bolt_app, CHANNEL_ID, CHANNEL_IDS, STRETCH_EMOJI, WORKOUT_EMOJI, CUSTOM_EMOJI, MAN_WALKING_EMOJI, GYM_EMOJIS, NON_ACTIVITY_EMOJIS, post_daily_message, post_weekend_message, parse_reminder_input, get_bot_user_id
 
 LIVE_EMOJI = "tv"
 
@@ -132,7 +132,7 @@ def handle_reaction_added(event):
                 text=f":walking: Walk logged! You've logged *{count}* other {'activity' if count == 1 else 'activities'} in this channel. Don't see it? Message Avery!",
             )
 
-    elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+    elif emoji.split("::")[0] not in NON_ACTIVITY_EMOJIS:
         base = emoji.split("::")[0]
         logged = database.log_activity(user_id, "other", f":{base}:", channel_id=post_channel)
         if logged:
@@ -171,7 +171,7 @@ def handle_reaction_removed(event):
         database.remove_activity(user_id, "gym")
     elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
         database.remove_activity(user_id, "other", description=":walking:")
-    elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+    elif emoji.split("::")[0] not in NON_ACTIVITY_EMOJIS:
         database.remove_activity(user_id, "other", description=f":{emoji.split('::')[0]}:")
 
 
@@ -447,7 +447,7 @@ def handle_resync(ack, command, respond):
                     continue
                 elif emoji == MAN_WALKING_EMOJI or emoji.startswith("man-walking::"):
                     entry = ("other", ":walking:")
-                elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+                elif emoji.split("::")[0] not in NON_ACTIVITY_EMOJIS:
                     entry = ("other", f":{emoji.split('::')[0]}:")
                 else:
                     continue
@@ -556,7 +556,7 @@ def handle_backfill(ack, command, client):
                     if not custom_title:
                         continue
                     atype, desc = "custom", ""
-                elif emoji.split("::")[0] in OTHER_ACTIVITY_EMOJIS:
+                elif emoji.split("::")[0] not in NON_ACTIVITY_EMOJIS:
                     atype, desc = "other", f":{emoji.split('::')[0]}:"
                 else:
                     continue

@@ -37,18 +37,19 @@ POLL_INTERVAL = 300  # seconds between polls
 STRETCH_EMOJI = "person_in_lotus_position"
 WORKOUT_EMOJI = "muscle"
 GYM_EMOJIS = {"man-lifting-weights", "woman-lifting-weights"}
-OTHER_ACTIVITY_EMOJIS = {
-    "bike", "bicyclist", "mountain_bicyclist",
-    "swimmer", "surfer", "rowing",
-    "skier", "snowboarder", "person_climbing", "mountain_snow", "hiking_boot",
-    "basketball", "soccer", "football", "tennis", "baseball", "volleyball",
-    "handball",
-    "badminton", "ping_pong",
-    "boulder", "rock", "ladder",
-    "boxing_glove", "martial_arts_uniform", "person_fencing",
-    "dancer", "man_dancing", "golf",
-    "athletic_shoe", "trophy", "sports_medal", "medal_sports",
-    "elliptical",
+NON_ACTIVITY_EMOJIS = {
+    "+1", "thumbsup", "-1", "thumbsdown", "ok_hand", "raised_hands", "clap",
+    "white_check_mark", "heavy_check_mark", "ballot_box_with_check", "x", "heavy_multiplication_x",
+    "pray", "raised_hand", "wave", "salute", "saluting_face",
+    "eyes", "point_up", "point_up_2", "point_down", "point_left", "point_right",
+    "tada", "confetti_ball", "partying_face",
+    "joy", "rofl", "laughing", "smile", "smiley", "grinning", "grin",
+    "slightly_smiling_face", "thinking_face", "sob", "cry", "scream", "flushed",
+    "sweat_smile", "wink", "heart_eyes", "star-struck", "hushed", "astonished", "open_mouth",
+    "upside_down_face", "sunglasses", "face_with_rolling_eyes",
+    "heart", "hearts", "sparkling_heart", "orange_heart", "yellow_heart",
+    "green_heart", "blue_heart", "purple_heart", "black_heart", "broken_heart",
+    "fire", "100", "star", "star2", "sparkles", "boom",
 }
 
 
@@ -61,7 +62,7 @@ def classify_emoji(name: str):
         return "workout", base
     if base in GYM_EMOJIS:
         return "gym", base
-    if base in OTHER_ACTIVITY_EMOJIS:
+    if base not in NON_ACTIVITY_EMOJIS:
         return "other", base
     return None, None
 
